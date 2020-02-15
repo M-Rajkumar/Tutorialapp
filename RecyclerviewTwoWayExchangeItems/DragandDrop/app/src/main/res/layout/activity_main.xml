@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data class="MainActivityBinding">
+
+        <import type="com.faces.novastrid.draganddrop.R" />
+
+        <!--<variable
+            name="chooseExerciseFragment"
+            type="com.stepett.app.fragments.excercise.ChooseExerciseFragment" />-->
+
+        <variable
+            name="mainActivity"
+            type="com.faces.novastrid.draganddrop.MainActivity" />
+
+    </data>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+
+        <View
+            android:id="@+id/view1"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="20dp"
+            android:background="@color/colorPrimaryDark" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rcv_selected_exercise"
+            android:layout_width="match_parent"
+            android:layout_height="110dp"
+            android:layout_below="@id/view1"
+            android:paddingTop="10dp"
+            app:exerciseHorizontalItems="@{mainActivity.exerciseSelectedList}"
+            app:layoutId="@{R.layout.layout_selected_exercise_item}" />
+
+
+        <View
+            android:id="@+id/view2"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_below="@id/rcv_selected_exercise"
+            android:background="@color/colorPrimaryDark" />
+
+        <LinearLayout
+            android:id="@+id/ll_filter_exrecise"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="10dp"
+            android:orientation="vertical">
+
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rcv_choose_exercise"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@id/ll_filter_exrecise"
+            android:layout_below="@id/view2"
+            android:layout_marginBottom="10dp"
+            android:layout_marginTop="10dp"
+            app:exerciseChooseItems="@{mainActivity.exerciseList}"
+            app:layoutId="@{R.layout.layout_choose_exercise_item}" />
+
+
+    </RelativeLayout>
+</layout>

@@ -1,0 +1,38 @@
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <data class="ChooseExerciseItemBinding">
+
+        <variable
+            name="exercise"
+            type="com.faces.novastrid.mvvmconcept.DragView.ExcercisePojo" />
+
+        <variable
+            name="chooseExerciseListAdapter"
+            type="com.faces.novastrid.mvvmconcept.DragView.ExerciseListAdapter" />
+
+    </data>
+
+    <RelativeLayout
+        android:id="@+id/rl_exercise_type"
+        android:layout_width="95dp"
+        android:layout_height="90dp"
+        android:background="@drawable/shape_purple_circle"
+        android:gravity="center"
+        android:onLongClick="@{chooseExerciseListAdapter.onLongClick}">
+
+        <!--android:onClick="@{chooseExerciseListAdapter.onListItemClick}"-->
+
+
+        <TextView
+            android:id="@+id/tv_exercise_type"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@{exercise.name}"
+            android:textAllCaps="true"
+            android:textColor="@android:color/white"
+            android:textSize="12sp" />
+
+    </RelativeLayout>
+
+</layout>

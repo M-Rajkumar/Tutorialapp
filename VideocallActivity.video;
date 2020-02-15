@@ -1,0 +1,5166 @@
+package com.telesto.RadiusDirect.video;
+
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
+import android.graphics.Color;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.support.annotation.NonNull;
+import android.support.design.widget.AppBarLayout;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v7.widget.CardView;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.telephony.TelephonyManager;
+import android.text.Html;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.util.TypedValue;
+import android.view.Display;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+
+import com.amulyakhare.textdrawable.TextDrawable;
+import com.daasuu.bl.BubbleLayout;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.opentok.android.BaseVideoRenderer;
+import com.opentok.android.OpentokError;
+import com.opentok.android.Publisher;
+import com.opentok.android.PublisherKit;
+import com.opentok.android.Session;
+import com.opentok.android.Stream;
+import com.opentok.android.Subscriber;
+import com.opentok.android.SubscriberKit;
+import com.telesto.RadiusDirect.Custom.MyTextViewBold;
+import com.telesto.RadiusDirect.Custom.MyTextViewMedium;
+import com.telesto.RadiusDirect.Custom.MyTextViewRegular;
+import com.telesto.RadiusDirect.FontUtils;
+import com.telesto.RadiusDirect.R;
+import com.telesto.RadiusDirect.addnewspkhcp.AddSpkHcp;
+import com.telesto.RadiusDirect.basepackage.BaseActivity;
+import com.telesto.RadiusDirect.certify.CertifyActivity;
+import com.telesto.RadiusDirect.closeout.CloseoutActivity;
+import com.telesto.RadiusDirect.constants.StringConstants;
+import com.telesto.RadiusDirect.constants.UrlConstants;
+import com.telesto.RadiusDirect.engagementdetaillanding.UserwithStatus;
+import com.telesto.RadiusDirect.help.HelpActivity;
+import com.telesto.RadiusDirect.poll.PollDetailsFragment;
+import com.telesto.RadiusDirect.poll.PollFragment;
+import com.telesto.RadiusDirect.questions.CallBackListener;
+import com.telesto.RadiusDirect.questions.CallbackDomain;
+import com.telesto.RadiusDirect.questions.Compose_Question;
+import com.telesto.RadiusDirect.questions.NotesFragment;
+import com.telesto.RadiusDirect.questions.Question;
+import com.telesto.RadiusDirect.selectcontent.SelectContentActivity;
+import com.telesto.RadiusDirect.speaker.UserDomain;
+import com.telesto.RadiusDirect.util.CommonUtils;
+import com.telesto.RadiusDirect.util.IncomingDomain;
+import com.telesto.RadiusDirect.util.WvClient;
+import com.telesto.RadiusDirect.volleyservice.VolleyInterface;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import pub.devrel.easypermissions.AfterPermissionGranted;
+import pub.devrel.easypermissions.EasyPermissions;
+
+import static com.telesto.RadiusDirect.constants.RequestConstants.REQ_CONTENT;
+import static com.telesto.RadiusDirect.constants.RequestConstants.REQ_HCP;
+import static com.telesto.RadiusDirect.constants.StringConstants.ADD_HCP_TIME;
+import static com.telesto.RadiusDirect.constants.StringConstants.TOKBOX_API_KEY;
+
+public class VideoCallActivity extends BaseActivity implements View.OnClickListener, Session.SessionListener, SubscriberKit.SubscriberListener, Publisher.PublisherListener, VolleyInterface, videointerface, Session.StreamPropertiesListener, CallBackListener, SubscriberKit.AudioLevelListener {
+
+    private static final String LOG_TAG = "VideoCallActivity";
+    private static final int RC_SETTINGS_SCREEN_PERM = 123;
+    private static final int RC_VIDEO_APP_PERM = 124;
+    final int[] newwidth = new int[1];
+    String SESSION_ID;
+    String TOKEN;
+    String PrimaryEO_id = "";
+    RecyclerView recyclerView, siderecylerview;
+    VideoCallAdapter callAdapter;
+    ImageView back;
+    ImageView audiosettings, videosettings, endcall;
+    boolean hasaudio = true;
+    //    private Subscriber mSubscriber;
+    boolean hasvideo = true;
+    boolean onpause = false;
+    boolean reqnotcalled = false;
+    boolean helpandsupport = false;
+    ArrayList<String> listeningarray;
+    ArrayList<String> paths;
+    LinearLayout swapcamera;
+    AlertDialog alert;
+    int orientation;
+    DatabaseReference mDatabase;
+    ValueEventListener valueEventListener;
+    View emptyview;
+    //    JSONArray EO;
+//    JSONArray HCP;
+//    JSONArray SPK;
+    String meetingid;
+    String repid = "";
+    String spkid = "";
+    MyTextViewBold msgbox;
+    ArrayList<String> videocallllist;
+    ArrayList<String> videoplaylist;
+    HashMap<String, Object> profilemap;
+    HashMap<String, Object> videocallmap;
+    HashMap<String, Object> emptymap;
+    boolean apiinprogress = false;
+    String apiid = "";
+    MyTextViewRegular video_meeting_id;
+    MyTextViewMedium video_content;
+    String topic = "";
+    String topicid = "";
+    String type = "";
+    String product_id = "";
+    String meeting_date = "";
+    String description = "";
+    String contentid = "";
+    ImageView info;
+    ImageView contenticon;
+    WebView urlWebView;
+    boolean isreponline = false;
+    boolean isContentVisible = false;
+    boolean isspeakeronline = false;
+    String removedstream = "";
+    boolean ended = false;
+    int zoompos = -1;
+    String zoomuser = "";
+    CountDownTimer timer;
+    CountDownTimer hcptimer;
+    LinearLayout questionsection, pollsection;
+    LinearLayout questionsection2, pollsection2, swapcamera2;
+    RelativeLayout bottommenusec;
+    FrameLayout bottommencontainer;
+    FragmentManager fragmentManager;
+    DisplayMetrics displayMetrics;
+    BubbleLayout bubblelayout;
+    MyTextViewRegular qbubble, abubble;
+    MyTextViewRegular pollbubble2, quesbubble2;
+    LinearLayout bottombar1, bottombar2;
+    Question question = new Question();
+    Compose_Question compose_question = new Compose_Question();
+    RelativeLayout mainviewvideo;
+    ImageView videopic;
+    MyTextViewRegular videoname;
+    LinearLayout helponvideocall, helponvideocall2;
+    ImageView closeview;
+    JSONObject waitresponse;
+    JSONArray primary_meeting_id;
+    String primarymeetingid = "";
+    ArrayList<String> usertypeeo;
+    ArrayList<String> usertypespk;
+    ArrayList<String> usertypehcp;
+    ArrayList<String> collabrep;
+    MyTextViewMedium toolbartitle;
+    RelativeLayout parentvideo;
+    LinearLayout callsettingslayout;
+    LinearLayout addhcp;
+    String res = "";
+    ImageView active;
+    MyTextViewRegular speaking;
+    MyTextViewRegular hcpleft;
+    RelativeLayout speakersec;
+    boolean canAddhcps = false;
+    String engagementdate = "";
+    String fromUser = "";
+    boolean myDmMeeting = true;
+    Timer scheduletimer;
+    ImageView addhcpicon;
+    String reason = "";
+    //    WebView zoomwebview;
+//    RelativeLayout zoomsec;
+//    ImageView closezoom;
+    ImageView zoomicon;
+    String contenturl = "";
+    AppBarLayout appbarlayout;
+    RelativeLayout titlelayout;
+    RelativeLayout videocallitemrecyclerbox, relativeLayoutSideView;
+    LinearLayout bottombar;
+    boolean zoomedwebview = false;
+    String meetingDMID = "";
+    String meetingInitiater = "";
+    String spkUser = "";
+    LinearLayout bottom_notes_speaker_mobile, bottom_notes_speaker;
+    MyTextViewRegular action_slide_notes;
+    MyTextViewMedium txt_slide_notes;
+    RelativeLayout relativeLayout_preview_slide_notes;
+
+    // For slidenotes section
+//    ImageView cross_icon;
+//    MyTextViewRegular slide_notes_eo,slide_notes_speaker;
+//    MyTextViewMedium notes_view;
+//    RelativeLayout noshowsec, viewcontainer;
+//    boolean tabletSize;
+//    LinearLayout slidenotes_section2,slidenotes_section;
+//    String contentstr,pagestr,notesstr;
+//    ArrayList<String> arrayListNotes;
+    ImageView close_menu;
+    NotesFragment notesFragment = new NotesFragment();
+    String meeting_slide_notes = "";
+    boolean contentControl = false;
+    private Session mSession;
+    private Publisher mPublisher;
+    private String TAG = "VideoCallActivity";
+    private CardView mPublisherViewContainer;
+
+    private MyTextViewRegular mQuesbubbleSection;
+    private LinearLayout mQuestionSection;
+    private MyTextViewRegular mSlideNotesAction;
+    private LinearLayout mSlideNotesSection;
+    private LinearLayout mNotesSection;
+    private MyTextViewRegular mPollBubbleSection;
+    private LinearLayout mPollSection;
+    private ImageView mHcpicon;
+    private LinearLayout mAddHcpSection;
+    private LinearLayout mBottombarCommon;
+
+    @SuppressLint({"SetJavaScriptEnabled", "SetTextI18n"})
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_video_call_slide);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        fragmentManager = getSupportFragmentManager();
+
+        mDatabase = FirebaseDatabase.getInstance(Firebaseurl).getReference();
+        meetingid = getIntent().getStringExtra("meetingid");
+        SESSION_ID = getIntent().getStringExtra("sessionid");
+        TOKEN = getIntent().getStringExtra("sessiontoken");
+        engagementdate = getIntent().getStringExtra("engagementdate");
+        fromUser = getIntent().getStringExtra("fromUser");
+        emptymap = new HashMap<>();
+
+//        if (usertype.equals("3")) {
+//            contentid = getIntent().getStringExtra("contentid");
+//        }
+//
+//        CommonUtils.log("contentid", contentid);
+
+//        topic = getIntent().getStringExtra("topic");
+//        topicid = getIntent().getStringExtra("topicid");
+//        description = getIntent().getStringExtra("topic_discription");
+//        String EOstring = getIntent().getStringExtra("EO");
+//        String HCPstring = getIntent().getStringExtra("HCP");
+//        String SPKstring = getIntent().getStringExtra("SPK");
+//
+
+        CommonUtils.log("completelog = ", "meetingid = " + meetingid + "SESSION_ID = " + SESSION_ID + "TOKEN = " + TOKEN);
+
+        CommonUtils.log(TAG, "From user - > " + fromUser + "User ID - >" + userID + " dm meeting  :: " + myDmMeeting);
+
+        if (usertype.equals("4")) {
+            if (fromUser.equals(userID)) {
+                myDmMeeting = true;
+            } else {
+                myDmMeeting = false;
+            }
+        } else {
+            myDmMeeting = false;
+        }
+
+        res = getIntent().getStringExtra("waitresponse");
+
+        try {
+            CommonUtils.log("waitresponse", new JSONObject(res).toString(4));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        initview();
+
+
+        String buildtype = getResources().getString(R.string.buildtype);
+
+
+        if (buildtype.equals("Demo")) {
+            pollsection.setVisibility(View.VISIBLE);
+            bottombar1.setWeightSum(5);
+
+            pollsection2.setVisibility(View.VISIBLE);
+            bottombar2.setWeightSum(4);
+
+            if (usertype.equals("1") || usertype.equals("4")) {
+                bottombar1.setVisibility(View.VISIBLE);
+
+                addhcp.setVisibility(View.VISIBLE);
+                bottombar1.setWeightSum(5);
+            } else {
+                bottombar2.setVisibility(View.VISIBLE);
+                if (usertype.equals("3")) {
+                    swapcamera2.setVisibility(View.GONE);
+                    bottombar2.setWeightSum(3);
+                } else {
+                    swapcamera2.setVisibility(View.VISIBLE);
+                    bottombar2.setWeightSum(4);
+                }
+            }
+
+        } else {
+            pollsection.setVisibility(View.GONE);
+            bottombar1.setWeightSum(4);
+
+            pollsection2.setVisibility(View.GONE);
+            bottombar2.setWeightSum(3);
+
+            if (tabletSize) {
+                bottom_notes_speaker.setVisibility(View.VISIBLE);
+                bottom_notes_speaker_mobile.setVisibility(View.GONE);
+            } else {
+                bottom_notes_speaker.setVisibility(View.GONE);
+                bottom_notes_speaker_mobile.setVisibility(View.VISIBLE);
+            }
+
+
+            if (usertype.equals("1") || usertype.equals("4")) {
+                bottombar1.setVisibility(View.VISIBLE);
+                addhcpicon.setImageResource(R.drawable.deaddicon);
+//                addhcp.setVisibility(View.GONE);
+//                bottombar1.setWeightSum(3);
+            } else {
+                bottombar2.setVisibility(View.VISIBLE);
+                if (usertype.equals("3")) {
+                    swapcamera2.setVisibility(View.GONE);
+                    bottombar2.setWeightSum(3);
+//                    bottombar2.setWeightSum(4);
+                } else {
+                    swapcamera2.setVisibility(View.VISIBLE);
+                    bottombar2.setWeightSum(4);
+                }
+            }
+
+        }
+
+
+        listeners();
+        orientation = this.getResources().getConfiguration().orientation;
+        calculatedimention();
+        setuprecyclerview();
+
+        setviews();
+
+        video_meeting_id.setText("Engagement ID :" + meetingid);
+
+        setfirebasebublelistner();
+
+        if (usertype.equals("3")) {
+            setFirebaseNotes();
+        }
+
+        if (bottombar1.getVisibility() == View.VISIBLE) {
+            if (!repid.equals(userID)) {
+                if (usertype.equals("1") || usertype.equals("4")) {
+
+                    if (pollsection.getVisibility() == View.VISIBLE) {
+                        int ws = (int) bottombar1.getWeightSum();
+                        pollsection.setVisibility(View.GONE);
+                        bottombar1.setWeightSum(ws - 1);
+                    }
+
+                }
+            }
+        }
+
+
+        setcontent();
+//        urlWebView.loadUrl(contenturl);
+
+        paths = new ArrayList<>();
+
+        CommonUtils.log("meetingarray", String.valueOf(listeningarray.size()));
+
+        for (int j = 0; j < listeningarray.size(); j++) {
+
+            setfirebaselistner(listeningarray.get(j));
+
+        }
+
+        //Question & Poll Section Enabled
+        try {
+            JSONObject response = new JSONObject(mainresponse);
+            if (response.has("site")) {
+                if (buildname.equals("RD")) {
+                    try {
+                        JSONObject jsonObject = response.getJSONObject("site");
+                        JSONObject config = jsonObject.getJSONObject("config");
+                        JSONArray bottommenu = config.getJSONArray("engagementmenu");
+                        for (int i = 0; i < bottommenu.length(); i++) {
+                            Object obj = bottommenu.get(i);
+                            if (obj instanceof JSONObject) {
+                                JSONObject jsonObject1 = bottommenu.getJSONObject(i);
+                                String click_action = jsonObject1.getString("click_action");
+                                if (click_action != null && click_action.equals("eng_qa")) {
+                                    questionsection2.setVisibility(jsonObject1.getBoolean("visibility") ? View.VISIBLE : View.GONE);
+                                }
+
+                                if (click_action != null && click_action.equals("eng_polls")) {
+                                    pollsection2.setVisibility(jsonObject1.getBoolean("visibility") ? View.VISIBLE : View.GONE);
+                                }
+                            }
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+
+        CommonUtils.log(TAG, " Bottombar child count > " + countVisible(bottombar1));
+
+        EventBus.getDefault().register(this);
+
+    }
+
+    private void setBottomMenuSection() {
+
+        if(is_content_note!=null&&is_content_note.equals("1")){
+            
+            
+
+        }else {
+            switch (usertype) {
+                case "1":
+
+                    break;
+                case "7":
+                case "2":
+                    break;
+                case "3":
+                    break;
+                default:
+                    break;
+            }
+        }
+
+
+    }
+
+    private int countVisible(ViewGroup myLayout) {
+        if (myLayout == null) return 0;
+        int count = 0;
+        for (int i = 0; i < myLayout.getChildCount(); i++) {
+            if (myLayout.getChildAt(i).getVisibility() == View.VISIBLE)
+                count++;
+        }
+        return count;
+    }
+
+    private void setFirebaseNotes() {
+        final String path = "engcnt/" + meetingid;
+
+        valueEventListener = mDatabase.child(path).orderByValue().addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                try {
+                    String file = String.valueOf(dataSnapshot.child("file").getValue());
+                    String fileType = String.valueOf(dataSnapshot.child("ftype").getValue());
+                    String id = String.valueOf(dataSnapshot.child("id").getValue());
+                    String notes = String.valueOf(dataSnapshot.child("notes").getValue());
+                    String page = String.valueOf(dataSnapshot.child("page").getValue());
+
+                    if (tabletSize) {
+                        if (!TextUtils.isEmpty(notes) && !notes.equals("") && !notes.equals("null")) {
+                            meeting_slide_notes = notes;
+                        } else {
+                            meeting_slide_notes = getString(R.string.message_slide_notes_empty);
+                        }
+
+                        txt_slide_notes.setText(meeting_slide_notes);
+
+                    } else {
+                        if (!TextUtils.isEmpty(notes) && !notes.equals("") && !notes.equals("null")) {
+                            meeting_slide_notes = notes;
+                        } else {
+                            meeting_slide_notes = getString(R.string.message_slide_notes_empty);
+                        }
+                    }
+
+                    CommonUtils.log("WaitingScreenNotes", "file: " + file + " fileType: " + fileType + " id: " + id + " notes: " + notes + " page: " + page);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+    }
+
+
+    private void setdatefuntion() {
+
+        DateFormat dateFormat = new SimpleDateFormat("MMMM dd,yyyy hh.mm a", Locale.US);
+
+        Date date = null;
+
+        try {
+
+            date = dateFormat.parse(engagementdate);
+            Calendar now = Calendar.getInstance();
+            now.setTime(date);
+            now.add(Calendar.MINUTE, ADD_HCP_TIME);
+            Date fiveaddeddate = now.getTime();
+
+            if (scheduletimer != null) {
+                scheduletimer.cancel();
+            }
+
+            if (checkclose()) {
+                starttimer2(fiveaddeddate);
+            }
+
+
+            if (type.equals("2")) {
+                boolean hasaccepted = false;
+
+                if (usertypehcp.size() != 0) {
+                    hasaccepted = true;
+                }
+
+
+                if (hasaccepted) {
+
+                    canAddhcps = false;
+                    addhcpicon.setImageResource(R.drawable.deaddicon);
+                    reason = "Maximum number of invitees for this engagement type is reached";
+
+
+                    if (scheduletimer != null) {
+                        scheduletimer.cancel();
+                    }
+
+                } else {
+                    if (reason.equals("")) {
+
+                        canAddhcps = true;
+                        addhcpicon.setImageResource(R.drawable.addicon);
+
+                    } else {
+                        canAddhcps = false;
+                        addhcpicon.setImageResource(R.drawable.deaddicon);
+                        reason = "Attendees can be added " + String.valueOf(ADD_HCP_TIME) + " Minutes prior to the Engagement start Time";
+
+                        if (scheduletimer != null) {
+                            scheduletimer.cancel();
+                        }
+                    }
+
+                }
+            } else {
+
+                if (reason.equals("")) {
+
+                    canAddhcps = true;
+                    addhcpicon.setImageResource(R.drawable.addicon);
+                } else {
+                    canAddhcps = false;
+                    addhcpicon.setImageResource(R.drawable.deaddicon);
+                    reason = "Attendees can be added " + String.valueOf(ADD_HCP_TIME) + " Minutes prior to the Engagement start Time";
+
+                    if (scheduletimer != null) {
+                        scheduletimer.cancel();
+                    }
+                }
+
+
+            }
+
+
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private long gettimertime(Date olddate) {
+
+
+        Date date = new Date();
+
+        return olddate.getTime() - date.getTime();
+    }
+
+
+    private void starttimer2(final Date date) {
+
+        try {
+
+            final long timertime = gettimertime(date);
+            scheduletimer = new Timer();
+            scheduletimer.schedule(
+                    new TimerTask() {
+                        @Override
+                        public void run() {
+                            // your code here
+
+                            VideoCallActivity.this.runOnUiThread(new Runnable() {
+                                public void run() {
+                                    setdatefuntion();
+                                }
+                            });
+
+
+                        }
+                    },
+                    timertime
+            );
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    private void setviews() {
+
+        try {
+
+            assert res != null;
+            if (!res.equals("")) {
+
+                waitresponse = new JSONObject(res);
+
+                setarrayfuntion(waitresponse);
+                showContentSection();
+
+            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void showContentSection() {
+        if (server.equals(StringConstants.ServerType.IPSEN) && meetingInitiater.equals(userID) || server.equals(StringConstants.ServerType.SPEAKER) && StringConstants.BRAND_NAME.equalsIgnoreCase(StringConstants.ServerType.IPSEN) && meetingInitiater.equals(userID)) {
+            contenticon.setVisibility(View.VISIBLE);
+
+        } else if (server.equals(StringConstants.ServerType.AVEXIS) && meetingInitiater.equals(userID) && type.equalsIgnoreCase("1") || server.equals(StringConstants.ServerType.SPEAKER) && StringConstants.BRAND_NAME.equalsIgnoreCase(StringConstants.ServerType.AVEXIS) && meetingInitiater.equals(userID) && type.equalsIgnoreCase("1")) {
+            contenticon.setVisibility(View.VISIBLE);
+        } else if (is_start != null && is_start.equals("1")) {
+            if (meetingInitiater.equals(userID)) {
+                contenticon.setVisibility(View.VISIBLE);
+            } else {
+                contenticon.setVisibility(View.GONE);
+            }
+        } else if (usertype.equals("3")) {
+            contenticon.setVisibility(View.VISIBLE);
+        } else {
+            contenticon.setVisibility(View.GONE);
+        }
+    }
+
+    private void setarrayfuntion(JSONObject response) {
+
+        try {
+            waitresponse = response;
+
+            usertypeeo = new ArrayList<>();
+            usertypespk = new ArrayList<>();
+            usertypehcp = new ArrayList<>();
+            collabrep = new ArrayList<>();
+            videocallmap = new HashMap<>();
+            profilemap = new HashMap<>();
+
+
+            listeningarray = new ArrayList<>();
+            listeningarray.add(meetingid);
+
+
+            if (mSession != null) {
+                mSession.disconnect();
+            }
+
+
+            JSONArray result = response.getJSONArray("result");
+
+
+            for (int i = 0; i < result.length(); i++) {
+
+
+                JSONObject object = result.getJSONObject(i);
+                meetingDMID = object.optString("dmApprovalBy");
+                meetingInitiater = object.optString("meeting_start_user");
+                spkUser = object.optString("spkUser");
+
+                JSONObject topicsobject = object.getJSONObject("topic");
+                meeting_date = object.getString("start_time");
+
+                String user = object.getString("user");
+                JSONObject typeOfMeeting = object.getJSONObject("typeOfMeeting");
+                String typetext = typeOfMeeting.getString("type");
+                type = typeOfMeeting.getString("id");
+                toolbartitle.setText(typetext);
+
+                is_start = typeOfMeeting.getString("is_start");
+                is_collaborator = typeOfMeeting.getString("is_collaborator");
+                is_co_host = typeOfMeeting.getString("is_cohost");
+                is_question = typeOfMeeting.getString("is_cohost");
+                is_content_note = typeOfMeeting.getString("is_cohost");
+
+                JSONObject product = object.getJSONObject("product");
+                String product_name = product.getString("product_name");
+                product_id = product.getString("id");
+
+                topic = topicsobject.getString("topic_title");
+                description = "";
+                if (topicsobject.has("topic_discription")) {
+                    description = topicsobject.getString("topic_discription");
+                } else if (topicsobject.has("topic_description")) {
+                    description = topicsobject.getString("topic_description");
+                }
+
+                topicid = topicsobject.getString("id");
+//                video_content.setText(topic);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    video_content.setText(Html.fromHtml(topic, Html.FROM_HTML_MODE_LEGACY));
+                } else {
+                    video_content.setText(Html.fromHtml(topic));
+                }
+
+                if (usertype.equals("3")) {
+
+
+                    JSONArray assiginedTopicContent = object.getJSONArray("assiginedTopicContent");
+                    if (assiginedTopicContent.length() != 0) {
+
+                        for (int j = 0; j < 1; j++) {
+
+                            JSONObject content = assiginedTopicContent.getJSONObject(j);
+                            JSONObject topic_content = content.getJSONObject("topic_content");
+
+                            contentid = topic_content.getString("id");
+
+                        }
+                    }
+                }
+
+
+                primary_meeting_id = object.getJSONArray("primary_meeting_id");
+                repid = object.getString("user");
+                if (primary_meeting_id != null && primary_meeting_id.length() > 0) {
+                    for (int m = 0; m < primary_meeting_id.length(); m++) {
+                        JSONObject jsonObject = primary_meeting_id.getJSONObject(m);
+
+                        String primaryRepId = jsonObject.getString("user");
+                        repid = primaryRepId;
+                    }
+                }
+                JSONArray acceptedParticipantDetails = object.getJSONArray("acceptedParticipantDetails");
+
+                JSONArray EO = new JSONArray();
+                JSONArray SPK = new JSONArray();
+                JSONArray HCP = new JSONArray();
+
+                /** creating json array for eo ,spk ,hcp **/
+
+
+                for (int p = 0; p < acceptedParticipantDetails.length(); p++) {
+
+                    JSONObject jsonObject = acceptedParticipantDetails.getJSONObject(p);
+                    String usertype = jsonObject.getString("userType");
+                    JSONObject participant = jsonObject.getJSONObject("participant");
+                    String userid = participant.getString("id");
+                    if (usertype.equals("1") || usertype.equals("4")) {
+
+                        if (user.equals(userid)) {
+
+                            EO.put(jsonObject);
+                        }
+
+                    } else if (usertype.equals("2")) {
+
+                        HCP.put(jsonObject);
+
+                    } else if (usertype.equals("3")) {
+
+                        SPK.put(jsonObject);
+                    }
+
+                }
+
+
+                /** EO LIST **/
+
+
+                //EO list --->
+                boolean needdm = false;
+                if (!myDmMeeting && usertype.equals("4")) {
+                    needdm = true;
+                }
+                if (usertype.equals("2") || usertype.equals("3") || needdm) {
+                    if (EO.length() > 0) {
+//                        joinList.add(new JoinDomain("title", "Engagement Owner", null, null, null, null));
+
+                        for (int k = 0; k < EO.length(); k++) {
+
+                            JSONObject eoobject = EO.getJSONObject(k);
+                            String firebaseid = eoobject.getString("id");
+
+                            JSONObject participant = eoobject.getJSONObject("participant");
+
+                            String firstName = participant.getString("firstName");
+                            String lastName = participant.getString("lastName");
+                            String email = participant.getString("email");
+                            String telephone = participant.getString("telephone");
+                            String degree = participant.getString("degree");
+                            String speciality = participant.getString("speciality");
+                            String institution = participant.getString("institution");
+                            String city = participant.getString("city");
+                            String state = participant.getString("state");
+                            String id = participant.getString("id");
+                            String photo = participant.getString("photo");
+                            String photo_path = participant.getString("photo_path");
+
+                            String userType = eoobject.getString("userType");
+                            String status = eoobject.getString("status");
+
+                            UserDomain userDomain = new UserDomain(id, firstName, lastName, email, telephone, state, userType, city, photo, photo_path, degree, speciality, institution, false, "", "", "", "", new JSONArray());
+
+                            UserwithStatus userwithStatusDomain = new UserwithStatus(userDomain, status, firebaseid, "0", "");
+
+                            usertypeeo.add(id);
+
+                            String imgletr;
+                            String firstletter = String.valueOf(firstName.charAt(0));
+
+                            if (lastName != null && !lastName.equals("")) {
+                                String lastletter = String.valueOf(lastName.charAt(0));
+                                imgletr = firstletter + lastletter;
+                            } else {
+                                imgletr = firstletter;
+                            }
+
+
+                            VideoProfileDomain videoProfileDomain1 = new VideoProfileDomain(id, userType, firstName + " " + lastName, Baseurl + photo_path + photo, imgletr);
+                            profilemap.put(id, videoProfileDomain1);
+//
+//                            repid = id;
+
+
+//                            joinList.add(new JoinDomain("attendees", "", null, null, userwithStatusDomain, null));
+
+                        }
+                    }
+
+                }
+
+                if (primary_meeting_id.length() == 0) {
+
+                    /** IF Primary meeting set speaker **/
+                    //Speaker list --->
+
+                    if (usertype.equals("1") || usertype.equals("4") || usertype.equals("2")) {
+
+                        if (SPK.length() > 0) {
+//                            joinList.add(new JoinDomain("title", "Speaker", null, null, null, null));
+
+                            for (int k = 0; k < SPK.length(); k++) {
+
+                                JSONObject spkobject = SPK.getJSONObject(k);
+
+
+                                String firebaseid = spkobject.getString("id");
+                                primarymeetingid = spkobject.getString("meeting");
+
+                                JSONObject participant = spkobject.getJSONObject("participant");
+
+                                String firstName = participant.getString("firstName");
+                                String lastName = participant.getString("lastName");
+                                String email = participant.getString("email");
+                                String telephone = participant.getString("telephone");
+                                String degree = participant.getString("degree");
+                                String speciality = participant.getString("speciality");
+                                String institution = participant.getString("institution");
+                                String city = participant.getString("city");
+                                String state = participant.getString("state");
+                                String id = participant.getString("id");
+                                String photo = participant.getString("photo");
+                                String photo_path = participant.getString("photo_path");
+
+                                String userType = spkobject.getString("userType");
+                                String status = spkobject.getString("status");
+
+                                UserDomain userDomain = new UserDomain(id, firstName, lastName, email, telephone, state, userType, city, photo, photo_path, degree, speciality, institution, false, "", "", "", "", new JSONArray());
+
+                                UserwithStatus userwithStatusDomain = new UserwithStatus(userDomain, status, firebaseid, "0", "");
+
+                                usertypespk.add(id);
+
+                                spkid = id;
+
+                                String imgletr;
+                                String firstletter = String.valueOf(firstName.charAt(0));
+
+                                if (lastName != null && !lastName.equals("")) {
+                                    String lastletter = String.valueOf(lastName.charAt(0));
+                                    imgletr = firstletter + lastletter;
+                                } else {
+                                    imgletr = firstletter;
+                                }
+
+                                VideoProfileDomain videoProfileDomain1 = new VideoProfileDomain(id, userType, firstName + " " + lastName, Baseurl + photo_path + photo, imgletr);
+                                profilemap.put(id, videoProfileDomain1);
+//
+//                                joinList.add(new JoinDomain("attendees", "", null, null, userwithStatusDomain, null));
+                            }
+                        }
+
+                        if (usertype.equals("1") || usertype.equals("4")) {
+                            JSONArray collaborateDetails = object.getJSONArray("collaborateDetails");
+
+                            for (int j = 0; j < collaborateDetails.length(); j++) {
+
+
+                                JSONObject jsonObject = collaborateDetails.getJSONObject(j);
+
+
+                                Object obj = jsonObject.get("user");
+                                if (obj instanceof JSONObject) {
+
+
+                                    JSONObject repobject = jsonObject.getJSONObject("user");
+                                    String firebaseid = jsonObject.getString("id");
+
+
+                                    String id = repobject.getString("id");
+                                    String firstName = repobject.getString("firstName");
+                                    String lastName = repobject.getString("lastName");
+                                    String email = repobject.getString("email");
+                                    String telephone = repobject.getString("telephone");
+                                    String state = repobject.getString("state");
+//                            String userType = repobject.getString("userType");
+                                    String city = repobject.getString("city");
+                                    String photo = repobject.getString("photo");
+                                    String photo_path = repobject.getString("photo_path");
+                                    String degree = repobject.getString("degree");
+                                    String speciality = repobject.getString("speciality");
+
+                                    String userType = jsonObject.getString("userType");
+                                    String status = jsonObject.getString("status");
+
+//
+                                    String institution = repobject.getString("institution");
+                                    UserDomain userDomain = new UserDomain(id, firstName, lastName, email, telephone, state, userType, city, photo, photo_path, degree, speciality, institution, false, "", "", "", "", new JSONArray());
+
+                                    UserwithStatus userwithStatusDomain = new UserwithStatus(userDomain, status, firebaseid, "0", "");
+
+                                    boolean contains = false;
+                                    for (int k = 0; k < collabrep.size(); k++) {
+                                        String ids = collabrep.get(k);
+                                        if (ids.equals(id)) {
+                                            contains = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!contains) {
+                                        collabrep.add(id);
+                                    }
+
+                                    String imgletr;
+                                    String firstletter = String.valueOf(firstName.charAt(0));
+
+                                    if (lastName != null && !lastName.equals("")) {
+                                        String lastletter = String.valueOf(lastName.charAt(0));
+                                        imgletr = firstletter + lastletter;
+                                    } else {
+                                        imgletr = firstletter;
+                                    }
+
+                                    VideoProfileDomain videoProfileDomain1 = new VideoProfileDomain(id, userType, firstName + " " + lastName, Baseurl + photo_path + photo, imgletr);
+                                    profilemap.put(id, videoProfileDomain1);
+                                } else {
+
+                                    JSONArray acceptedParticipantDetails1 = jsonObject.getJSONArray("acceptedParticipantDetails");
+//
+                                    String user1 = jsonObject.getString("user");
+
+                                    CommonUtils.log("userrep", user1);
+
+
+                                    for (int k = 0; k < acceptedParticipantDetails1.length(); k++) {
+
+                                        JSONObject jsonObjec5 = acceptedParticipantDetails1.getJSONObject(k);
+
+
+                                        JSONObject participant = jsonObjec5.getJSONObject("participant");
+                                        String meeting1 = jsonObjec5.getString("meeting");
+
+                                        String firebaseid1 = jsonObjec5.getString("id");
+
+//                                        String id1 = participant.getString("id");
+                                        String firstName = participant.getString("firstName");
+                                        String lastName = participant.getString("lastName");
+                                        String email = participant.getString("email");
+                                        String telephone = participant.getString("telephone");
+                                        String degree = participant.getString("degree");
+                                        String speciality = participant.getString("speciality");
+                                        String institution = participant.getString("institution");
+                                        String city = participant.getString("city");
+                                        String state = participant.getString("state");
+                                        String id = participant.getString("id");
+                                        String photo = participant.getString("photo");
+                                        String photo_path = participant.getString("photo_path");
+
+                                        String userType = jsonObjec5.getString("userType");
+                                        String status = jsonObjec5.getString("status");
+
+                                        UserDomain userDomain = new UserDomain(id, firstName, lastName, email, telephone, state, userType, city, photo, photo_path, degree, speciality, institution, false, "", "", "", "", new JSONArray());
+
+                                        UserwithStatus userwithStatusDomain = new UserwithStatus(userDomain, status, firebaseid1, "0", "");
+
+                                        if (user1.equals(id)) {
+
+                                            CommonUtils.log("userrep", user1);
+
+
+                                            boolean contains = false;
+                                            for (int l = 0; l < collabrep.size(); l++) {
+                                                String ids = collabrep.get(l);
+                                                if (ids.equals(id)) {
+                                                    contains = true;
+                                                    break;
+                                                }
+                                            }
+                                            if (!contains) {
+                                                collabrep.add(id);
+                                            }
+
+                                            String imgletr;
+                                            String firstletter = String.valueOf(firstName.charAt(0));
+
+                                            if (lastName != null && !lastName.equals("")) {
+                                                String lastletter = String.valueOf(lastName.charAt(0));
+                                                imgletr = firstletter + lastletter;
+                                            } else {
+                                                imgletr = firstletter;
+                                            }
+
+                                            VideoProfileDomain videoProfileDomain1 = new VideoProfileDomain(id, userType, firstName + " " + lastName, Baseurl + photo_path + photo, imgletr);
+                                            profilemap.put(id, videoProfileDomain1);
+
+                                            break;
+
+
+                                        }
+
+
+                                    }
+
+                                }
+                            }
+
+                        }
+
+                    } else if (usertype.equals("3")) {
+
+                        JSONArray collaborateDetails = object.getJSONArray("collaborateDetails");
+
+                        for (int j = 0; j < collaborateDetails.length(); j++) {
+
+
+                            JSONObject jsonObject = collaborateDetails.getJSONObject(j);
+
+
+                            Object obj = jsonObject.get("user");
+                            if (obj instanceof JSONObject) {
+
+
+                                String firebaseid = jsonObject.getString("id");
+
+                                JSONObject repobject = jsonObject.getJSONObject("user");
+
+
+                                String id = repobject.getString("id");
+                                String firstName = repobject.getString("firstName");
+                                String lastName = repobject.getString("lastName");
+                                String email = repobject.getString("email");
+                                String telephone = repobject.getString("telephone");
+                                String state = repobject.getString("state");
+//                            String userType = repobject.getString("userType");
+                                String city = repobject.getString("city");
+                                String photo = repobject.getString("photo");
+                                String photo_path = repobject.getString("photo_path");
+                                String degree = repobject.getString("degree");
+                                String speciality = repobject.getString("speciality");
+
+                                String userType = jsonObject.getString("userType");
+                                String status = jsonObject.getString("status");
+
+//
+                                String institution = repobject.getString("institution");
+                                UserDomain userDomain = new UserDomain(id, firstName, lastName, email, telephone, state, userType, city, photo, photo_path, degree, speciality, institution, false, "", "", "", "", new JSONArray());
+
+                                UserwithStatus userwithStatusDomain = new UserwithStatus(userDomain, status, firebaseid, "0", "");
+
+                                boolean contains = false;
+                                for (int k = 0; k < collabrep.size(); k++) {
+                                    String ids = collabrep.get(k);
+                                    if (ids.equals(id)) {
+                                        contains = true;
+                                        break;
+                                    }
+                                }
+                                if (!contains) {
+                                    collabrep.add(id);
+                                }
+
+                                String imgletr;
+                                String firstletter = String.valueOf(firstName.charAt(0));
+
+                                if (lastName != null && !lastName.equals("")) {
+                                    String lastletter = String.valueOf(lastName.charAt(0));
+                                    imgletr = firstletter + lastletter;
+                                } else {
+                                    imgletr = firstletter;
+                                }
+
+                                VideoProfileDomain videoProfileDomain1 = new VideoProfileDomain(id, userType, firstName + " " + lastName, Baseurl + photo_path + photo, imgletr);
+                                profilemap.put(id, videoProfileDomain1);
+                            } else {
+
+                                JSONArray acceptedParticipantDetails1 = jsonObject.getJSONArray("acceptedParticipantDetails");
+//
+                                String user1 = jsonObject.getString("user");
+
+                                CommonUtils.log("userrep", user1);
+
+
+                                for (int k = 0; k < acceptedParticipantDetails1.length(); k++) {
+
+                                    JSONObject jsonObjec5 = acceptedParticipantDetails1.getJSONObject(k);
+
+
+                                    JSONObject participant = jsonObjec5.getJSONObject("participant");
+                                    String meeting1 = jsonObjec5.getString("meeting");
+
+                                    String firebaseid1 = jsonObjec5.getString("id");
+
+//                                        String id1 = participant.getString("id");
+                                    String firstName = participant.getString("firstName");
+                                    String lastName = participant.getString("lastName");
+                                    String email = participant.getString("email");
+                                    String telephone = participant.getString("telephone");
+                                    String degree = participant.getString("degree");
+                                    String speciality = participant.getString("speciality");
+                                    String institution = participant.getString("institution");
+                                    String city = participant.getString("city");
+                                    String state = participant.getString("state");
+                                    String id = participant.getString("id");
+                                    String photo = participant.getString("photo");
+                                    String photo_path = participant.getString("photo_path");
+
+                                    String userType = jsonObjec5.getString("userType");
+                                    String status = jsonObjec5.getString("status");
+
+                                    UserDomain userDomain = new UserDomain(id, firstName, lastName, email, telephone, state, userType, city, photo, photo_path, degree, speciality, institution, false, "", "", "", "", new JSONArray());
+
+                                    UserwithStatus userwithStatusDomain = new UserwithStatus(userDomain, status, firebaseid1, "0", "");
+
+                                    if (user1.equals(id)) {
+
+                                        CommonUtils.log("userrep", user1);
+
+
+                                        boolean contains = false;
+                                        for (int l = 0; l < collabrep.size(); l++) {
+                                            String ids = collabrep.get(l);
+                                            if (ids.equals(id)) {
+                                                contains = true;
+                                                break;
+                                            }
+                                        }
+                                        if (!contains) {
+                                            collabrep.add(id);
+                                        }
+
+                                        String imgletr;
+                                        String firstletter = String.valueOf(firstName.charAt(0));
+
+                                        if (lastName != null && !lastName.equals("")) {
+                                            String lastletter = String.valueOf(lastName.charAt(0));
+                                            imgletr = firstletter + lastletter;
+                                        } else {
+                                            imgletr = firstletter;
+                                        }
+
+                                        VideoProfileDomain videoProfileDomain1 = new VideoProfileDomain(id, userType, firstName + " " + lastName, Baseurl + photo_path + photo, imgletr);
+                                        profilemap.put(id, videoProfileDomain1);
+
+                                        break;
+
+
+                                    }
+
+
+                                }
+
+                            }
+                        }
+
+
+                    }
+
+                } else {
+
+                    /** IF secondary meeting  set primary rep  **/
+
+                    for (int m = 0; m < primary_meeting_id.length(); m++) {
+                        JSONObject jsonObject = primary_meeting_id.getJSONObject(m);
+
+                        String primaryRepId = jsonObject.getString("user");
+                        CommonUtils.log(TAG, "primaryRepid :" + primaryRepId);
+                        repid = primaryRepId;
+
+                        JSONArray acceptedParticipantDetails2 = jsonObject.getJSONArray("acceptedParticipantDetails");
+
+                        Object obj = jsonObject.get("user");
+                        if (obj instanceof JSONObject) {
+
+                            JSONObject participant = jsonObject.getJSONObject("user");
+
+//                                joinList.add(new JoinDomain("title", "Primary Engagement Owner", null, null, null, null));
+
+
+                            String firebaseid = jsonObject.getString("id");
+
+                            String meeting1 = jsonObject.getString("meeting");
+
+
+                            String firstName = participant.getString("firstName");
+                            String lastName = participant.getString("lastName");
+                            String email = participant.getString("email");
+                            String telephone = participant.getString("telephone");
+                            String degree = participant.getString("degree");
+                            String speciality = participant.getString("speciality");
+                            String institution = participant.getString("institution");
+                            String city = participant.getString("city");
+                            String state = participant.getString("state");
+                            String id = participant.getString("id");
+                            String photo = participant.getString("photo");
+                            String photo_path = participant.getString("photo_path");
+
+                            String userType = jsonObject.getString("userType");
+                            String status = jsonObject.getString("status");
+
+                            UserDomain userDomain = new UserDomain(id, firstName, lastName, email, telephone, state, userType, city, photo, photo_path, degree, speciality, institution, false, "", "", "", "", new JSONArray());
+
+                            UserwithStatus userwithStatusDomain = new UserwithStatus(userDomain, status, firebaseid, "0", "");
+
+                            usertypeeo.add(id);
+                            PrimaryEO_id = id;
+
+//                            repid = id;
+
+                            if (usertype.equals("1")) {
+                                String imgletr;
+                                String firstletter = String.valueOf(firstName.charAt(0));
+
+                                if (lastName != null && !lastName.equals("")) {
+                                    String lastletter = String.valueOf(lastName.charAt(0));
+                                    imgletr = firstletter + lastletter;
+                                } else {
+                                    imgletr = firstletter;
+                                }
+
+                                VideoProfileDomain videoProfileDomain1 = new VideoProfileDomain(id, userType, firstName + " " + lastName, Baseurl + photo_path + photo, imgletr);
+                                profilemap.put(id, videoProfileDomain1);
+//
+
+
+                                if (!listeningarray.contains(meeting1)) {
+                                    listeningarray.add(meeting1);
+                                }
+                            }
+
+//                                joinList.add(new JoinDomain("attendees", "", null, null, userwithStatusDomain, null));
+
+
+                        } else {
+
+                            String user1 = jsonObject.getString("user");
+                            PrimaryEO_id = user1;
+
+//                                joinList.add(new JoinDomain("title", "Primary Engagement Owner", null, null, null, null));
+
+
+                            for (int k = 0; k < primary_meeting_id.length(); k++) {
+                                JSONObject jsonObjec5 = primary_meeting_id.getJSONObject(k);
+                                JSONArray jsonArray = jsonObjec5.getJSONArray("acceptedParticipantDetails");
+
+                                for (int j = 0; j < jsonArray.length(); j++) {
+
+
+                                    JSONObject participant = jsonArray.getJSONObject(j).getJSONObject("participant");
+                                    String meeting1 = jsonArray.getJSONObject(j).getString("meeting");
+
+
+                                    String firebaseid = jsonArray.getJSONObject(j).getString("id");
+
+                                    String id1 = participant.getString("id");
+                                    String firstName = participant.getString("firstName");
+                                    String lastName = participant.getString("lastName");
+                                    String email = participant.getString("email");
+                                    String telephone = participant.getString("telephone");
+                                    String degree = participant.getString("degree");
+                                    String speciality = participant.getString("speciality");
+                                    String institution = participant.getString("institution");
+                                    String city = participant.getString("city");
+                                    String state = participant.getString("state");
+                                    String id = participant.getString("id");
+                                    String photo = participant.getString("photo");
+                                    String photo_path = participant.getString("photo_path");
+
+                                    String userType = jsonArray.getJSONObject(j).getString("userType");
+                                    String status = jsonArray.getJSONObject(j).getString("status");
+
+                                    UserDomain userDomain = new UserDomain(id, firstName, lastName, email, telephone, state, userType, city, photo, photo_path, degree, speciality, institution, false, "", "", "", "", new JSONArray());
+
+                                    UserwithStatus userwithStatusDomain = new UserwithStatus(userDomain, status, firebaseid, "0", "");
+
+                                    if (id1.equals(user1)) {
+
+//                                        repid = id1;
+
+
+                                        if (usertype.equals("1")) {
+
+                                            if (!listeningarray.contains(meeting1)) {
+                                                listeningarray.add(meeting1);
+                                            }
+
+
+                                            usertypeeo.add(id1);
+                                            String imgletr;
+                                            String firstletter = String.valueOf(firstName.charAt(0));
+
+                                            if (lastName != null && !lastName.equals("")) {
+                                                String lastletter = String.valueOf(lastName.charAt(0));
+                                                imgletr = firstletter + lastletter;
+                                            } else {
+                                                imgletr = firstletter;
+                                            }
+
+                                            VideoProfileDomain videoProfileDomain1 = new VideoProfileDomain(id1, userType, firstName + " " + lastName, Baseurl + photo_path + photo, imgletr);
+                                            profilemap.put(id, videoProfileDomain1);
+//
+//                                            joinList.add(new JoinDomain("attendees", "", null, null, userwithStatusDomain, null));
+                                        }
+                                        break;
+                                    }
+                                }
+
+                            }
+
+                        }
+
+
+                        /** IF secondary meeting  set speaker  **/
+
+                        for (int n = 0; n < acceptedParticipantDetails2.length(); n++) {
+                            JSONObject jsonObject1 = acceptedParticipantDetails2.getJSONObject(n);
+
+
+                            String firebaseid = jsonObject1.getString("id");
+                            String meeting1 = jsonObject1.getString("meeting");
+
+                            JSONObject participant = jsonObject1.getJSONObject("participant");
+
+                            String firstName = participant.getString("firstName");
+                            String lastName = participant.getString("lastName");
+                            String email = participant.getString("email");
+                            String telephone = participant.getString("telephone");
+                            String degree = participant.getString("degree");
+                            String speciality = participant.getString("speciality");
+                            String institution = participant.getString("institution");
+                            String city = participant.getString("city");
+                            String state = participant.getString("state");
+                            String id = participant.getString("id");
+                            String photo = participant.getString("photo");
+                            String photo_path = participant.getString("photo_path");
+
+                            String userType = jsonObject1.getString("userType");
+                            String status = jsonObject1.getString("status");
+
+                            UserDomain userDomain = new UserDomain(id, firstName, lastName, email, telephone, state, userType, city, photo, photo_path, degree, speciality, institution, false, "", "", "", "", new JSONArray());
+
+                            if (userType.equals("3")) {
+
+                                primarymeetingid = meeting1;
+//                                joinList.add(new JoinDomain("title", "Speaker", null, null, null, null));
+//
+                                if (!listeningarray.contains(meeting1)) {
+                                    listeningarray.add(meeting1);
+                                }
+
+                                usertypespk.add(id);
+                                spkid = id;
+
+                                String imgletr;
+                                String firstletter = String.valueOf(firstName.charAt(0));
+
+                                if (lastName != null && !lastName.equals("")) {
+                                    String lastletter = String.valueOf(lastName.charAt(0));
+                                    imgletr = firstletter + lastletter;
+                                } else {
+                                    imgletr = firstletter;
+                                }
+
+
+                                VideoProfileDomain videoProfileDomain1 = new VideoProfileDomain(id, userType, firstName + " " + lastName, Baseurl + photo_path + photo, imgletr);
+                                profilemap.put(id, videoProfileDomain1);
+//
+//                                UserwithStatus userwithStatusDomain = new UserwithStatus(userDomain, status, firebaseid, "0", "");
+//
+//                                joinList.add(new JoinDomain("attendees", "", null, null, userwithStatusDomain, null));
+                            }
+                        }
+                    }
+
+
+                }
+                //HCP list --->
+
+
+                /** Set our HCP  **/
+
+                if (usertype.equals("1") || usertype.equals("4") || usertype.equals("3")) {
+
+                    if (HCP.length() > 0) {
+
+//                        joinList.add(new JoinDomain("title", "Attendees", null, null, null, null));
+
+                        for (int k = 0; k < HCP.length(); k++) {
+
+                            JSONObject hcpobject = HCP.getJSONObject(k);
+
+                            String firebaseid = hcpobject.getString("id");
+
+                            JSONObject participant = hcpobject.getJSONObject("participant");
+
+                            String firstName = participant.getString("firstName");
+                            String lastName = participant.getString("lastName");
+                            String email = participant.getString("email");
+                            String telephone = participant.getString("telephone");
+                            String degree = participant.getString("degree");
+                            String speciality = participant.getString("speciality");
+                            String institution = participant.getString("institution");
+                            String city = participant.getString("city");
+                            String state = participant.getString("state");
+                            String id = participant.getString("id");
+                            String photo = participant.getString("photo");
+                            String photo_path = participant.getString("photo_path");
+
+                            String userType = hcpobject.getString("userType");
+                            String status = hcpobject.getString("status");
+
+                            UserDomain userDomain = new UserDomain(id, firstName, lastName, email, telephone, state, userType, city, photo, photo_path, degree, speciality, institution, false, "", "", "", "", new JSONArray());
+
+                            UserwithStatus userwithStatusDomain = new UserwithStatus(userDomain, status, firebaseid, "0", "");
+
+                            usertypehcp.add(id);
+
+                            String imgletr;
+                            String firstletter = String.valueOf(firstName.charAt(0));
+
+                            if (lastName != null && !lastName.equals("")) {
+                                String lastletter = String.valueOf(lastName.charAt(0));
+                                imgletr = firstletter + lastletter;
+                            } else {
+                                imgletr = firstletter;
+                            }
+
+                            VideoProfileDomain videoProfileDomain1 = new VideoProfileDomain(id, userType, firstName + " " + lastName, Baseurl + photo_path + photo, imgletr);
+                            profilemap.put(id, videoProfileDomain1);
+//
+//                            joinList.add(new JoinDomain("attendees", "", null, null, userwithStatusDomain, null));
+                        }
+                    }
+
+                }
+
+//                JSONObject topic = object.getJSONObject("topic");
+//
+//                topic_title = topic.getString("topic_title");
+//                CommonUtils.log("abcdef", topic_title);
+//                topic_discription = topic.getString("topic_discription");
+//                topicid = topic.getString("id");
+//
+//
+//                title.setText(topic_title);
+
+
+                JSONArray collaborateDetails = object.getJSONArray("collaborateDetails");
+
+
+//                for (int k = 0; k < collaborateDetails.length(); k++) {
+//
+//                    JSONObject jsonObject = collaborateDetails.getJSONObject(k);
+//                    primarymeetingid = jsonObject.getString("primary_meeting_id");
+//
+//                    break;
+//                }
+                setContentControl();
+
+                if (!primarymeetingid.equals("")) {
+                    if (!listeningarray.contains(primarymeetingid)) {
+                        listeningarray.add(primarymeetingid);
+                    }
+
+                    setcontent();
+                }
+
+
+                /** Set SECONDARY  HCP  **/
+
+                if (usertype.equals("1") || usertype.equals("4") || usertype.equals("3")) {
+
+                    for (int k = 0; k < collaborateDetails.length(); k++) {
+                        JSONArray acceptedParticipantDetails1 = collaborateDetails.getJSONObject(k).getJSONArray("acceptedParticipantDetails");
+
+                        for (int l = 0; l < acceptedParticipantDetails1.length(); l++) {
+
+                            JSONObject hcpobject = acceptedParticipantDetails1.getJSONObject(l);
+
+                            String firebaseid = hcpobject.getString("id");
+                            String meeting1 = hcpobject.getString("meeting");
+
+
+                            JSONObject participant = hcpobject.getJSONObject("participant");
+
+                            String firstName = participant.getString("firstName");
+                            String lastName = participant.getString("lastName");
+                            String email = participant.getString("email");
+                            String telephone = participant.getString("telephone");
+                            String degree = participant.getString("degree");
+                            String speciality = participant.getString("speciality");
+                            String institution = participant.getString("institution");
+                            String city = participant.getString("city");
+                            String state = participant.getString("state");
+                            String id = participant.getString("id");
+                            String photo = participant.getString("photo");
+                            String photo_path = participant.getString("photo_path");
+
+                            String userType = hcpobject.getString("userType");
+                            String status = hcpobject.getString("status");
+
+                            UserDomain userDomain = new UserDomain(id, firstName, lastName, email, telephone, state, userType, city, photo, photo_path, degree, speciality, institution, false, "", "", "", "", new JSONArray());
+
+                            if (userType.equals("2")) {
+                                if (!listeningarray.contains(meeting1)) {
+                                    listeningarray.add(meeting1);
+                                }
+
+                                UserwithStatus userwithStatusDomain = new UserwithStatus(userDomain, status, firebaseid, "0", "");
+                                usertypehcp.add(id);
+                                String imgletr;
+                                String firstletter = String.valueOf(firstName.charAt(0));
+
+                                if (lastName != null && !lastName.equals("")) {
+                                    String lastletter = String.valueOf(lastName.charAt(0));
+                                    imgletr = firstletter + lastletter;
+                                } else {
+                                    imgletr = firstletter;
+                                }
+
+                                VideoProfileDomain videoProfileDomain1 = new VideoProfileDomain(id, userType, firstName + " " + lastName, Baseurl + photo_path + photo, imgletr);
+                                profilemap.put(id, videoProfileDomain1);
+//
+//                                joinList.add(new JoinDomain("attendees", "", null, null, userwithStatusDomain, null));
+                            }
+                        }
+
+                    }
+                }
+//Ipsen change start
+            }
+
+            if (usertype.equals("3")) {
+                spkid = userID;
+            }
+
+            if (primary_meeting_id != null) {
+                if (primary_meeting_id.length() == 0) {
+                    //changed- usertype changed
+                    if (!usertype.equals("3")) {
+                        if (usertype.equals("1") || myDmMeeting) {
+
+//                        repid = userID;
+                            isreponline = true;
+                        }
+                    }
+
+                }
+            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+
+        /** Creating Video Call List  **/
+        /*int size = usertypeeo.size() + usertypespk.size() + collabrep.size() + usertypehcp.size() + 1;*/
+        // changed- I have add condition for prevent add dm id to videocallllist and profile map
+
+
+        int nextpos = 0;
+        int size = usertypeeo.size() + usertypespk.size() + collabrep.size() + usertypehcp.size();
+
+        if (!usertype.equals("4") || myDmMeeting) {
+            size = size + 1;
+            videocallllist = new ArrayList<>(Collections.nCopies(size, "0"));
+            CommonUtils.log("videoCallSize", String.valueOf(videocallllist.size()));
+            videocallllist.set(0, userID);
+            VideoProfileDomain videoProfileDomain = new VideoProfileDomain(userID, usertype, "Me", profilephoto, "ME");
+            profilemap.put(userID, videoProfileDomain);
+            nextpos = 1;
+        } else {
+
+            videocallllist = new ArrayList<>(Collections.nCopies(size, "0"));
+        }
+
+//            }
+//        } else {
+//            VideoProfileDomain videoProfileDomain = new VideoProfileDomain(userID, usertype, "Me", profilephoto, "ME");
+//            profilemap.put(userID, videoProfileDomain);
+//        }
+
+
+        for (int i = 0; i < usertypeeo.size(); i++) {
+            if (videocallllist.size() >= nextpos) {
+//                if (userids.contains(usertypeeo.get(i))) {
+                videocallllist.set(nextpos, usertypeeo.get(i));
+
+                nextpos = nextpos + 1;
+//                }
+            }
+        }
+
+        for (int i = 0; i < usertypespk.size(); i++) {
+            if (videocallllist.size() >= nextpos) {
+//                if (userids.contains(usertypespk.get(i))) {
+                videocallllist.set(nextpos, usertypespk.get(i));
+
+                nextpos = nextpos + 1;
+//                }
+            }
+        }
+
+        for (int i = 0; i < collabrep.size(); i++) {
+            if (videocallllist.size() >= nextpos) {
+//                if (userids.contains(usertypespk.get(i))) {
+                videocallllist.set(nextpos, collabrep.get(i));
+
+                nextpos = nextpos + 1;
+//                }
+            }
+        }
+
+
+        for (int i = 0; i < usertypehcp.size(); i++) {
+
+
+            CommonUtils.log("nextops", String.valueOf(videocallllist.size() - 1));
+
+            if (videocallllist.size() - 1 >= nextpos) {
+                if (!usertype.equals("2")) {
+//                    if (userids.contains(usertypehcp.get(i))) {
+                    videocallllist.set(nextpos, usertypehcp.get(i));
+
+                    nextpos = nextpos + 1;
+//                    }
+                } else {
+                    videocallllist.remove(nextpos);
+                }
+            }
+        }
+
+
+        if (videoplaylist == null) {
+
+            videoplaylist = new ArrayList<>();
+
+            if (videocallllist != null) {
+                if (videocallllist.size() > 1) {
+                    if (!usertype.equals("2")) {
+
+                        if (usertype.equals("1")) {
+                            if (primary_meeting_id.length() != 0) {
+
+                                if (videocallllist.size() > 2) {
+                                    for (int i = 0; i < 3; i++) {
+
+                                        videoplaylist.add(videocallllist.get(i));
+                                        callAdapter.videocallllist = videoplaylist;
+                                    }
+                                }
+
+                            } else {
+                                for (int i = 0; i < 2; i++) {
+
+                                    videoplaylist.add(videocallllist.get(i));
+                                    callAdapter.videocallllist = videoplaylist;
+                                }
+                            }
+                        } else {
+                            for (int i = 0; i < 2; i++) {
+
+                                videoplaylist.add(videocallllist.get(i));
+                                callAdapter.videocallllist = videoplaylist;
+                            }
+                        }
+                    } else {
+
+                        if (videocallllist.size() > 2) {
+                            for (int i = 0; i < 3; i++) {
+
+                                videoplaylist.add(videocallllist.get(i));
+                                callAdapter.videocallllist = videoplaylist;
+                            }
+                        } else if (videocallllist.size() > 1) {
+                            for (int i = 0; i < 2; i++) {
+
+                                videoplaylist.add(videocallllist.get(i));
+                                callAdapter.videocallllist = videoplaylist;
+                            }
+                        }
+
+                    }
+                }
+            }
+
+        }
+        CommonUtils.log("profilemapsec", String.valueOf(profilemap.size()));
+
+        callAdapter.profilemap = profilemap;
+        callAdapter.videocallmap = videocallmap;
+        callAdapter.notifyDataSetChanged();
+//        recyclerView.post(new Runnable() {
+//            @Override
+//            public void run() {
+//                callAdapter.notifyDataSetChanged();
+//            }
+//        });
+
+        /** If session not called  **/
+        if (!reqnotcalled) {
+            requestPermissions();
+            reqnotcalled = true;
+        } else {
+
+            /** If session  called  reconnect **/
+            if (mSession != null) {
+                mSession.connect(TOKEN);
+            }
+        }
+
+
+    }
+
+    private void setfirebaselistner(String primarymeetingid) {
+
+        try {
+            final String path = "engagement/" + primarymeetingid + "/engagement_participant";
+            paths.add(path);
+
+            final boolean[] firsttime = {true};
+            valueEventListener = mDatabase.child(path).orderByKey().addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+
+                    create_image_map_funtion(dataSnapshot, firsttime[0]);
+                    firsttime[0] = false;
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                }
+            });
+
+
+        } catch (OutOfMemoryError e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void callwaitingscreenapi() {
+
+        String url = Baseurl + UrlConstants.WAITING_SCREEN_URL + meetingid;
+        volleyUtils.callnetworkrequest(VideoCallActivity.this, this, 2, url, null, TAG, UrlConstants.REQ_WAITING_SCREEN_URL, 1, false, false);
+
+    }
+
+    private void callLiveSession() {
+
+        String url = Baseurl + UrlConstants.LIVE_SESSION + meetingid;
+        volleyUtils.callnetworkrequest(VideoCallActivity.this, this, 2, url, null, TAG, UrlConstants.REQ_LIVE_SESSION, 1, false, false);
+
+    }
+
+    @Subscribe
+    public void onEvent(IncomingDomain event) {
+
+        int state = event.getState();
+
+        try {
+            switch (state) {
+                case TelephonyManager.CALL_STATE_IDLE:
+//                    Log.d("DEBUG", "IDLE");
+//                    onpause = false;
+//                    pauseaudiooncall();
+
+
+                    break;
+                case TelephonyManager.CALL_STATE_OFFHOOK:
+                    helpandsupport = true;
+
+//                    Log.d("DEBUG", "OFFHOOK");
+//                    onpause = true;
+//                    pauseaudiooncall();
+
+
+                    break;
+                case TelephonyManager.CALL_STATE_RINGING:
+                    Log.d("DEBUG", "RINGING");
+
+
+                    break;
+            }
+        } catch (OutOfMemoryError e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public void onDestroy() {
+
+        super.onDestroy();
+        EventBus.getDefault().unregister(this);
+        leaveapi(false);
+        editor.putString("videoscreen", "false");
+        editor.apply();
+
+    }
+
+    private void calculatedimention() {
+
+
+        displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+
+
+        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+
+
+            int width = displayMetrics.widthPixels;
+
+            int px = CommonUtils.dpToPx(16);
+
+
+            newwidth[0] = (width - px) / 3;
+
+
+        } else {
+
+
+            int height = displayMetrics.heightPixels;
+            int px = CommonUtils.dpToPx(16);
+            newwidth[0] = (height - px) / 3;
+
+
+        }
+    }
+
+    private void setcontent() {
+
+
+        String port = "";
+        if (!Baseurl.equals("https://api.p2pconnections.com/")) {
+            int i = Baseurl.lastIndexOf(":");
+            String[] a = {Baseurl.substring(0, i), Baseurl.substring(i)};
+            port = a[1].replaceAll("[^0-9]", "");
+            if (port.equals("")) {
+                port = "105";
+            }
+            CommonUtils.log("str11", a[0] + " " + a[1]);
+        } else {
+            port = "105";
+        }
+
+        setContentControl();
+
+//Ipsen change start
+        boolean isSpeaker = false;
+        if (server.equalsIgnoreCase(StringConstants.ServerType.SPEAKER) && StringConstants.BRAND_NAME.equalsIgnoreCase(StringConstants.ServerType.IPSEN)) {
+            isSpeaker = true;
+        }
+        if (server.equals(StringConstants.ServerType.SPEAKER) && is_start.equals("1")) {
+            isSpeaker = true;
+        }
+        CommonUtils.log(TAG, " Content url " + contentControl + "\n  It is speaker " + isSpeaker + " \n Meeting Initiater " + meetingInitiater);
+        if (server.equals(StringConstants.ServerType.IPSEN) || server.equals(StringConstants.ServerType.CORE) && is_start.equals("1") || isSpeaker) {
+
+            /* Content control flow for who is start the meeting */
+
+//            if (contentControl) {
+//
+//                String url = Baseurl + UrlConstants.CONTENT_EO_URL_IPSEN + "mid=" + meetingid + "&port=" + port + "&engagementType=" + type;
+//
+//                volleyUtils.callnetworkrequest(VideoCallActivity.this, this, 2, url, null, TAG, UrlConstants.REQ_CONTENT_EO_URL_IPSEN, 1, false, false);
+//
+//            } else {
+//                String url = Baseurl + UrlConstants.CONTENT_SPK_URL_IPSEN + "mid=" + meetingid + "&port=" + port + "&engagementType=" + type;
+//
+//                volleyUtils.callnetworkrequest(VideoCallActivity.this, this, 2, url, null, TAG, UrlConstants.REQ_CONTENT_SPK_URL_IPSEN, 1, false, false);
+//
+//
+//            }
+
+            /* Default call EO url for Engagement owner and call Client url for other users*/
+
+            if (fromUser.equals(userID) && primary_meeting_id.length() == 0) {
+                String url = Baseurl + UrlConstants.CONTENT_EO_URL_IPSEN + "mid=" + meetingid + "&port=" + port + "&engagementType=" + type;
+
+                volleyUtils.callnetworkrequest(VideoCallActivity.this, this, 2, url, null, TAG, UrlConstants.REQ_CONTENT_EO_URL_IPSEN, 1, false, false);
+
+            } else {
+                String id;
+                if (primarymeetingid.equals("")) {
+                    id = meetingid;
+                } else {
+                    id = primarymeetingid;
+                }
+
+                String url = Baseurl + UrlConstants.CONTENT_OTHERS_URL2 + "mid=" + id + "&port=" + port;
+
+
+                volleyUtils.callnetworkrequest(VideoCallActivity.this, this, 2, url, null, TAG, UrlConstants.REQ_CONTENT_OTHERS_URL, 1, false, false);
+            }
+
+
+        } else if (usertype.equals("3")) {
+//            String url = "https://www.radiusdirect.net" + UrlConstants.CONTENT_SPEAKR_URL;
+
+//            String url = a[0] + UrlConstants.CONTENT_SPEAKR_URL;
+
+//            HashMap<String, Object> params = new HashMap<>();
+
+//            if (primarymeetingid.equals("")){
+//            params.put("mid", meetingid);
+//            }else {
+//                params.put("mid", primarymeetingid);
+//            }
+
+//            params.put("cid", contentid);
+//            params.put("port", port);
+
+            String url = Baseurl + UrlConstants.CONTENT_SPEAKR_URL2 + "mid=" + meetingid + "&port=" + port + "&cid=" + contentid;
+
+
+//            CommonUtils.log("meetingparams", params.toString());
+            volleyUtils.callnetworkrequest(VideoCallActivity.this, this, 2, url, null, TAG, UrlConstants.REQ_CONTENT_SPEAKR_URL, 1, false, false);
+
+
+        } else if (usertype.equals("1") || usertype.equals("2") || usertype.equals("4")) {
+//            String url = a[0] + UrlConstants.CONTENT_OTHERS_URL;
+//            String url = "https://www.radiusdirect.net" + UrlConstants.CONTENT_OTHERS_URL;
+            String id;
+//            HashMap<String, Object> params = new HashMap<>();
+            if (primarymeetingid.equals("")) {
+//                params.put("mid", meetingid);
+                id = meetingid;
+            } else {
+//                params.put("mid", primarymeetingid);
+                id = primarymeetingid;
+            }
+//            params.put("port", port);
+
+
+            String url = Baseurl + UrlConstants.CONTENT_OTHERS_URL2 + "mid=" + id + "&port=" + port;
+
+
+//            CommonUtils.log("meetingparams", params.toString());
+            volleyUtils.callnetworkrequest(VideoCallActivity.this, this, 2, url, null, TAG, UrlConstants.REQ_CONTENT_OTHERS_URL, 1, false, false);
+
+        }
+    }
+
+    private void setfirebasebublelistner() {
+
+        String path = "engagement/" + meetingid + "/QA";
+        valueEventListener = mDatabase.child(path).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                checkbubble(dataSnapshot);
+
+                refreshfragfuntion();
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+
+        if (usertype.equals("2")) {
+            String path2 = "engagement/" + meetingid + "/polls";
+            valueEventListener = mDatabase.child(path2).addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                    checkbubble2(dataSnapshot);
+
+                    refreshfragfuntion();
+
+
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                }
+            });
+        }
+    }
+
+    private void checkbubble2(DataSnapshot dataSnapshot) {
+
+        String val = "0";
+        if (dataSnapshot.hasChild(userID)) {
+            if (dataSnapshot.child(userID).hasChild("active_polls")) {
+                val = String.valueOf(dataSnapshot.child(userID).child("active_polls").getValue());
+
+            }
+        }
+
+        if (bottombar1.getVisibility() == View.VISIBLE) {
+            if (!val.equals("0")) {
+                abubble.setVisibility(View.VISIBLE);
+            } else {
+                abubble.setVisibility(View.GONE);
+            }
+        } else if (bottombar2.getVisibility() == View.VISIBLE) {
+            if (!val.equals("0")) {
+                pollbubble2.setVisibility(View.VISIBLE);
+            } else {
+                pollbubble2.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    private void refreshfragfuntion() {
+
+        if (bottommenusec.getVisibility() == View.VISIBLE) {
+//            if (fragmentManager.getBackStackEntryCount() > 0) {
+
+            Fragment f = fragmentManager.findFragmentById(R.id.bottommencontainer);
+            if (f instanceof Question || f instanceof Compose_Question) {
+                setarrow(1);
+
+                bottommenusec.setVisibility(View.VISIBLE);
+
+                if (f instanceof Question) {
+
+                    question.callapi();
+
+                } else {
+                    onBackPressed();
+
+                }
+
+//                Bundle arguments = new Bundle();
+//                arguments.putString("meetingid", meetingid);
+//                question.setArguments(arguments);
+//                fragmentManager.popBackStack("BACK_STACK_ROOT_TAG", FragmentManager.POP_BACK_STACK_INCLUSIVE);
+//
+//                // Add the new tab fragment
+//                fragmentManager.beginTransaction()
+//                        .replace(R.id.bottommencontainer, question)
+//                        .addToBackStack("BACK_STACK_ROOT_TAG")
+//                        .commit();
+
+
+            } else if (f instanceof PollFragment || f instanceof PollDetailsFragment) {
+//                setarrow(2);
+//
+//                bottommenusec.setVisibility(View.VISIBLE);
+//
+//
+//                PollFragment pollFragment = new PollFragment();
+//
+//
+//                fragmentManager.popBackStack("BACK_STACK_ROOT_TAG", FragmentManager.POP_BACK_STACK_INCLUSIVE);
+//
+//                // Add the new tab fragment
+//                fragmentManager.beginTransaction()
+//                        .replace(R.id.bottommencontainer, pollFragment)
+//                        .addToBackStack("BACK_STACK_ROOT_TAG")
+//                        .commit();
+
+            }
+        }
+
+    }
+
+    private void checkbubble(DataSnapshot dataSnapshot) {
+
+        String eocount = "0";
+        if (dataSnapshot.hasChild("EoCount")) {
+            eocount = String.valueOf(dataSnapshot.child("EoCount").getValue());
+
+        }
+        String spkcount = "0";
+        if (dataSnapshot.hasChild("SpkCount")) {
+            spkcount = String.valueOf(dataSnapshot.child("SpkCount").getValue());
+
+        }
+
+        CommonUtils.log("WaitingScreenNotesQuestion", eocount);
+
+
+        CommonUtils.log("spkcount", spkcount + usertype);
+        if (bottombar1.getVisibility() == View.VISIBLE) {
+            if (usertype.equals("1") || usertype.equals("4")) {
+
+
+                if (!eocount.equals("0")) {
+
+
+                    qbubble.setVisibility(View.VISIBLE);
+//                if (Integer.parseInt(eocount) > 9) {
+//                    qbubble.setText("9+");
+//                } else {
+                    qbubble.setText(eocount);
+//                }
+                } else {
+                    qbubble.setVisibility(View.GONE);
+                }
+
+            } else if (usertype.equals("3")) {
+
+                if (!spkcount.equals("0")) {
+
+                    qbubble.setVisibility(View.VISIBLE);
+
+//                if (Integer.parseInt(spkcount) > 9) {
+//                    qbubble.setText("9+");
+//                } else {
+                    qbubble.setText(spkcount);
+//                }
+
+                } else {
+                    qbubble.setVisibility(View.GONE);
+                }
+
+            }
+
+        } else if (bottombar2.getVisibility() == View.VISIBLE) {
+
+            if (usertype.equals("1") || usertype.equals("4")) {
+
+
+                if (!eocount.equals("0")) {
+
+
+                    quesbubble2.setVisibility(View.VISIBLE);
+//                if (Integer.parseInt(eocount) > 9) {
+//                    qbubble.setText("9+");
+//                } else {
+                    quesbubble2.setText(eocount);
+//                }
+                } else {
+                    quesbubble2.setVisibility(View.GONE);
+                }
+
+            } else if (usertype.equals("3")) {
+
+                if (!spkcount.equals("0")) {
+
+                    quesbubble2.setVisibility(View.VISIBLE);
+
+//                if (Integer.parseInt(spkcount) > 9) {
+//                    qbubble.setText("9+");
+//                } else {
+                    quesbubble2.setText(spkcount);
+//                }
+
+                } else {
+                    quesbubble2.setVisibility(View.GONE);
+                }
+
+            }
+
+
+        }
+    }
+
+
+    private void create_image_map_funtion(DataSnapshot dataSnapshot, boolean firsttime) {
+
+        try {
+
+            for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+
+                String userid = String.valueOf(snapshot.child("participant").getValue());
+                String userType = String.valueOf(snapshot.child("userType").getValue());
+                String status = String.valueOf(snapshot.child("status").getValue());
+//                if (!userids.contains(userid)) {
+//                    userids.add(userid);
+//                }
+                CommonUtils.log(" check firebase   ", " status: " + status + " - userid: " + userid + " - myuserid: " + userID + " repid " + repid + " primary EO id " + PrimaryEO_id);
+
+                CommonUtils.log(" check firebase2   ", " repid " + repid + " primary EO id " + PrimaryEO_id);
+
+                if (server.equals(StringConstants.ServerType.CORE) || server.equals(StringConstants.ServerType.SPEAKER) && is_start.equals("1")) {
+                    if (!meetingInitiater.equals(userid)) {
+                        if (status.equals("3")) {
+
+                            if (userid.equals(userID)) {
+
+                                if (!ended) {
+                                    ended = true;
+                                    showendbox(VideoCallActivity.this);
+
+                                }
+                            }
+
+
+                        }
+                    }
+
+                } else {
+                    if (!repid.equals(userID)) {
+
+                        if (status.equals("3")) {
+
+                            if (userid.equals(userID)) {
+
+                                if (!ended) {
+                                    ended = true;
+                                    showendbox(VideoCallActivity.this);
+
+                                }
+                            }
+
+
+                        }
+                    }
+                }
+
+
+            }
+
+
+            if (!firsttime) {
+                CommonUtils.log("waitingscreenapi", "called");
+                callwaitingscreenapi();
+            }
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void showendbox(Context context) {
+
+        if (context instanceof Activity) {
+            Activity activity = (Activity) context;
+            if (!activity.isFinishing()) {
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                builder.setMessage(FontUtils.customFontCharacter(VideoCallActivity.this, "The meeting has ended. Would you like to close out?", 1)).setCancelable(false).setPositiveButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Yes", 2), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        dialog.dismiss();
+                        leaveapi2(true);
+
+                    }
+                }).setNegativeButton(FontUtils.customFontCharacter(VideoCallActivity.this, "No", 2), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                        leaveapi(true);
+                    }
+                });
+                alert = builder.create();
+                alert.show();
+                callAdapter.notifyDataSetChanged();
+
+            }
+        }
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+
+        orientation = this.getResources().getConfiguration().orientation;
+        boolean tabletSize = getResources().getBoolean(R.bool.isTablet);
+
+        setupzoomview();
+
+        if (tabletSize) {
+
+
+            setuprecyclerview();
+
+            if (bottommenusec.getVisibility() == View.VISIBLE) {
+                if (fragmentManager.getBackStackEntryCount() > 0) {
+
+                    Fragment f = fragmentManager.findFragmentById(R.id.bottommencontainer);
+                    if (f instanceof Question || f instanceof Compose_Question) {
+                        setarrow(1);
+                    } else if (f instanceof PollFragment || f instanceof PollDetailsFragment) {
+                        setarrow(3);
+                    } else if (f instanceof NotesFragment) {
+                        setarrow(2);
+                    }
+                }
+
+
+            }
+
+        } else {
+
+            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+                zoomedwebview = false;
+                zoomicon.setImageResource(R.drawable.maximize);
+                appbarlayout.setVisibility(View.VISIBLE);
+                titlelayout.setVisibility(View.VISIBLE);
+//                speakersec.setVisibility(View.VISIBLE);
+                callsettingslayout.setVisibility(View.VISIBLE);
+                videocallitemrecyclerbox.setVisibility(View.VISIBLE);
+                // videocallitemrecyclerboxside.setVisibility(View.GONE);
+                bottombar.setVisibility(View.VISIBLE);
+
+            } else {
+                zoomedwebview = true;
+                zoomicon.setImageResource(R.drawable.minimize);
+                appbarlayout.setVisibility(View.GONE);
+                titlelayout.setVisibility(View.GONE);
+//                speakersec.setVisibility(View.GONE);
+                callsettingslayout.setVisibility(View.GONE);
+                videocallitemrecyclerbox.setVisibility(View.GONE);
+                // videocallitemrecyclerboxside.setVisibility(View.VISIBLE);
+
+                bottombar.setVisibility(View.GONE);
+
+            }
+
+        }
+        super.onConfigurationChanged(newConfig);
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private void initview() {
+
+        recyclerView = findViewById(R.id.videocallitemrecycler);
+
+        siderecylerview = findViewById(R.id.videocallitemrecyclerside);
+        addhcp = findViewById(R.id.addhcp);
+
+
+        back = findViewById(R.id.back);
+        audiosettings = findViewById(R.id.audiosetting);
+        audiosettings.setEnabled(false);
+        videosettings = findViewById(R.id.videosetting);
+        videosettings.setEnabled(false);
+        endcall = findViewById(R.id.endcall);
+
+        swapcamera = findViewById(R.id.swapcamera);
+
+        video_meeting_id = findViewById(R.id.video_meeting_id);
+        video_content = findViewById(R.id.video_content);
+        info = findViewById(R.id.info);
+
+        contenticon = findViewById(R.id.contenticon);
+
+        questionsection = findViewById(R.id.questionsection);
+        pollsection = findViewById(R.id.pollsection);
+
+        bottombar1 = findViewById(R.id.bottombar1);
+        CommonUtils.log(TAG, "Bottombar child count before > " + bottombar1.getChildCount());
+        bottombar2 = findViewById(R.id.bottombar2);
+
+        questionsection2 = findViewById(R.id.questionsection2);
+        pollsection2 = findViewById(R.id.pollsection2);
+        swapcamera2 = findViewById(R.id.swapcamera2);
+        toolbartitle = findViewById(R.id.toolbartitle);
+        appbarlayout = findViewById(R.id.appbarlayout);
+        urlWebView = findViewById(R.id.containWebView);
+        urlWebView.setWebViewClient(new WvClient(VideoCallActivity.this));
+        urlWebView.setWebChromeClient(new WebChromeClient());
+        urlWebView.getSettings().setMediaPlaybackRequiresUserGesture(false);
+        urlWebView.getSettings().setJavaScriptEnabled(true);
+        urlWebView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
+        urlWebView.getSettings().setAllowFileAccess(true);
+        urlWebView.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        urlWebView.getSettings().setDomStorageEnabled(true);
+
+
+        msgbox = findViewById(R.id.msgbox);
+
+        bottommenusec = findViewById(R.id.bottommenusec);
+        bottommencontainer = findViewById(R.id.bottommencontainer);
+
+        bubblelayout = findViewById(R.id.bubblelayout);
+        qbubble = findViewById(R.id.qbubble);
+        abubble = findViewById(R.id.abubble);
+        quesbubble2 = findViewById(R.id.quesbubble2);
+        pollbubble2 = findViewById(R.id.pollbubble2);
+        addhcpicon = findViewById(R.id.addhcpicon);
+
+        speaking = findViewById(R.id.speaking);
+        speakersec = findViewById(R.id.speakersec);
+        hcpleft = findViewById(R.id.hcpleft);
+
+
+        mPublisherViewContainer = findViewById(R.id.publisher_container);
+        mainviewvideo = findViewById(R.id.mainviewvideo);
+        videopic = findViewById(R.id.videopic);
+        videoname = findViewById(R.id.videoname);
+
+        closeview = findViewById(R.id.closeview);
+        helponvideocall = findViewById(R.id.helponvideocall);
+        helponvideocall2 = findViewById(R.id.helponvideocall2);
+        parentvideo = findViewById(R.id.parentvideo);
+        callsettingslayout = findViewById(R.id.callsettingslayout);
+        emptyview = findViewById(R.id.emptyview);
+        active = findViewById(R.id.active);
+        titlelayout = findViewById(R.id.titlelayout);
+        videocallitemrecyclerbox = findViewById(R.id.videocallitemrecyclerbox);
+        // relativeLayoutSideView = findViewById(R.id.relativeLayoutSideView);
+        bottombar = findViewById(R.id.bottombar);
+
+
+        // For slidenotes section
+        bottom_notes_speaker_mobile = findViewById(R.id.bottom_notes_speaker_mobile);
+        action_slide_notes = findViewById(R.id.action_slide_notes);
+        relativeLayout_preview_slide_notes = findViewById(R.id.relativeLayout_preview_slide_notes);
+        bottom_notes_speaker = findViewById(R.id.bottom_notes_speaker);
+
+        close_menu = parentvideo.findViewById(R.id.cross_icon);
+        txt_slide_notes = parentvideo.findViewById(R.id.notes_view);
+
+        mQuesbubbleSection = findViewById(R.id.quesbubble_section);
+        mQuestionSection = findViewById(R.id.question_section);
+        mSlideNotesAction = findViewById(R.id.slide_notes_action);
+        mSlideNotesSection = findViewById(R.id.slide_notes_section);
+        mNotesSection = findViewById(R.id.notes_section);
+        mPollBubbleSection = findViewById(R.id.poll_bubble_section);
+        mPollSection = findViewById(R.id.poll_section);
+        mHcpicon = findViewById(R.id.hcpicon);
+        mAddHcpSection = findViewById(R.id.add_hcp_section);
+        mBottombarCommon =findViewById(R.id.bottombar_common);
+
+
+
+//        zoomwebview = findViewById(R.id.zoomwebview);
+//        zoomwebview.setWebViewClient(new WvClient(VideoCallActivity.this));
+//        zoomwebview.setWebChromeClient(new WebChromeClient());
+//        zoomwebview.getSettings().setMediaPlaybackRequiresUserGesture(false);
+//        zoomwebview.getSettings().setJavaScriptEnabled(true);
+//        zoomwebview.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
+//        zoomwebview.getSettings().setAllowFileAccess(true);
+//        zoomwebview.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+//        zoomwebview.getSettings().setDomStorageEnabled(true);
+
+
+//        zoomsec = findViewById(R.id.zoomsec);
+//        closezoom = findViewById(R.id.closezoom);
+        zoomicon = findViewById(R.id.zoomicon);
+
+//        if (!tabletSize) {
+//            zoomicon.setVisibility(View.VISIBLE);
+//        } else {
+//            zoomicon.setVisibility(View.GONE);
+//
+//        }
+
+        if (usertype != null && !usertype.equalsIgnoreCase("3")) {
+            if (!tabletSize) {
+                zoomicon.setVisibility(View.VISIBLE);
+            } else {
+                zoomicon.setVisibility(View.GONE);
+            }
+
+        } else {
+            zoomicon.setVisibility(View.VISIBLE);
+
+        }
+
+
+    }
+
+    @Override
+    protected void onPause() {
+
+        super.onPause();
+        onpause = true;
+        pausevideo();
+
+        if (helpandsupport) {
+            leaveapi(false);
+        }
+
+        if (scheduletimer != null) {
+            scheduletimer.cancel();
+        }
+
+        if (hcptimer != null) {
+            hcptimer.cancel();
+        }
+
+        if (timer != null) {
+            timer.cancel();
+        }
+
+
+    }
+
+    private void pausevideo() {
+
+        if (mPublisher != null) {
+            if (onpause) {
+                if (hasvideo) {
+                    mPublisher.setPublishVideo(false);
+                }
+
+
+            } else {
+                if (hasvideo) {
+
+                    if (msgbox.getVisibility() == View.VISIBLE) {
+                        if (!msgbox.getText().toString().equals("EO not available at the moment.")) {
+
+                            mPublisher.setPublishVideo(true);
+
+
+                        }
+
+                    } else {
+
+
+                        mPublisher.setPublishVideo(true);
+
+
+                    }
+                }
+
+            }
+        }
+
+    }
+
+    private void pauseaudiooncall() {
+
+        if (mPublisher != null) {
+            if (onpause) {
+                if (hasaudio) {
+                    mPublisher.setPublishAudio(false);
+                }
+
+
+            } else {
+                if (hasaudio) {
+
+                    if (msgbox.getVisibility() == View.VISIBLE) {
+                        if (!msgbox.getText().toString().equals("EO not available at the moment.")) {
+
+                            mPublisher.setPublishAudio(true);
+
+
+                        }
+
+                    } else {
+
+
+                        mPublisher.setPublishAudio(true);
+
+
+                    }
+                }
+
+            }
+        }
+
+    }
+
+    @Override
+    protected void onResume() {
+
+        super.onResume();
+        if (onpause) {
+            if (helpandsupport) {
+                setviews();
+            }
+        }
+
+        onpause = false;
+        pausevideo();
+
+
+        helpandsupport = false;
+
+
+        editor.putString("videoscreen", "true");
+        editor.apply();
+
+//        if (usertype.equals("1") || usertype.equals("4")) {
+//            setdatefuntion();
+//        }
+
+    }
+
+    private void listeners() {
+
+        back.setOnClickListener(this);
+        audiosettings.setOnClickListener(this);
+        videosettings.setOnClickListener(this);
+        endcall.setOnClickListener(this);
+
+        swapcamera.setOnClickListener(this);
+
+        questionsection.setOnClickListener(this);
+        pollsection.setOnClickListener(this);
+
+        swapcamera2.setOnClickListener(this);
+
+        questionsection2.setOnClickListener(this);
+        pollsection2.setOnClickListener(this);
+
+        info.setOnClickListener(this);
+        contenticon.setOnClickListener(this);
+        addhcp.setOnClickListener(this);
+
+        bottommenusec.setOnClickListener(this);
+        mainviewvideo.setOnClickListener(this);
+
+        closeview.setOnClickListener(this);
+        // For slidenotes section
+//        slide_notes.setOnClickListener(this);
+//        cross_icon.setOnClickListener(this);
+        helponvideocall.setOnClickListener(this);
+        helponvideocall2.setOnClickListener(this);
+
+        zoomicon.setOnClickListener(this);
+//        closezoom.setOnClickListener(this);
+
+        close_menu.setOnClickListener(this);
+        bottom_notes_speaker_mobile.setOnClickListener(this);
+        bottom_notes_speaker.setOnClickListener(this);
+
+    }
+
+    private void setuprecyclerview() {
+        //setup
+
+
+        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+            videocallitemrecyclerbox.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.VISIBLE);
+
+            recyclerView.setHasFixedSize(true);
+            recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+
+            callAdapter = new VideoCallAdapter(VideoCallActivity.this, videoplaylist, profilemap, videocallmap, orientation, VideoCallActivity.this, newwidth);
+//            callAdapter.setHasStableIds(true);
+            recyclerView.setAdapter(callAdapter);
+            siderecylerview.setAdapter(null);
+            // videocallitemrecyclerboxside.setVisibility(View.GONE);
+            siderecylerview.setVisibility(View.GONE);
+
+
+        } else {
+            // videocallitemrecyclerboxside.setVisibility(View.VISIBLE);
+            siderecylerview.setVisibility(View.VISIBLE);
+            siderecylerview.setHasFixedSize(true);
+            siderecylerview.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+
+            callAdapter = new VideoCallAdapter(VideoCallActivity.this, videoplaylist, profilemap, videocallmap, orientation, VideoCallActivity.this, newwidth);
+
+            siderecylerview.setAdapter(callAdapter);
+            recyclerView.setAdapter(null);
+            videocallitemrecyclerbox.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
+
+
+        }
+
+        if (usertype != null && usertype.equalsIgnoreCase("3")) {
+            videocallitemrecyclerbox.setVisibility(View.GONE);
+            siderecylerview.setVisibility(View.GONE);
+        } else {
+            videocallitemrecyclerbox.setVisibility(View.VISIBLE);
+            siderecylerview.setVisibility(View.VISIBLE);
+        }
+
+
+    }
+
+    private void setupzoomview() {
+        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+
+            if (usertype != null && usertype.equalsIgnoreCase("3")) {
+                if (videocallitemrecyclerbox.getVisibility() != View.VISIBLE) {
+                    videocallitemrecyclerbox.setVisibility(View.VISIBLE);
+                    zoomicon.setImageResource(R.drawable.minimize);
+                } else {
+                    videocallitemrecyclerbox.setVisibility(View.GONE);
+                    zoomicon.setImageResource(R.drawable.maximize);
+                }
+            } else {
+                videocallitemrecyclerbox.setVisibility(View.VISIBLE);
+
+                if (mainviewvideo.getVisibility() != View.VISIBLE) {
+                    if (msgbox.getVisibility() != View.VISIBLE) {
+                        if (zoomedwebview) {
+                            closezoomwebview();
+                        } else {
+                            try {
+
+                                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                            } catch (IllegalStateException e) {
+
+                                e.printStackTrace();
+                            }
+
+                        }
+                    }
+                }
+            }
+
+        } else {
+            if (usertype != null && usertype.equalsIgnoreCase("3")) {
+
+
+                if (siderecylerview.getVisibility() != View.VISIBLE) {
+                    siderecylerview.setVisibility(View.VISIBLE);
+                    zoomicon.setImageResource(R.drawable.minimize);
+                } else {
+                    siderecylerview.setVisibility(View.GONE);
+                    zoomicon.setImageResource(R.drawable.maximize);
+                }
+            } else {
+                videocallitemrecyclerbox.setVisibility(View.VISIBLE);
+
+                if (mainviewvideo.getVisibility() != View.VISIBLE) {
+                    if (msgbox.getVisibility() != View.VISIBLE) {
+                        if (zoomedwebview) {
+                            closezoomwebview();
+                        } else {
+                            try {
+
+                                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                            } catch (IllegalStateException e) {
+
+                                e.printStackTrace();
+                            }
+
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean checkclose() {
+
+        DateFormat dateFormat = new SimpleDateFormat("MMMM dd,yyyy hh.mm a", Locale.US);
+        Date previous = null;
+
+        try {
+            previous = dateFormat.parse(engagementdate);
+            CommonUtils.log("newdate", dateFormat.format(previous));
+
+            Date now = new Date();
+
+            if (previous != null) {
+
+                long maxdate = previous.getTime() + (ADD_HCP_TIME * 60 * 1000);
+                if (maxdate > now.getTime()) {
+                    reason = "";
+                    canAddhcps = true;
+                    CommonUtils.log("maxdate", "yes");
+
+                    addhcpicon.setImageResource(R.drawable.addicon);
+
+
+                } else {
+                    canAddhcps = false;
+                    CommonUtils.log("maxdate", "no");
+                    reason = "Attendees can be added " + String.valueOf(ADD_HCP_TIME) + " Minutes prior to the Engagement start Time";
+
+                    addhcpicon.setImageResource(R.drawable.deaddicon);
+
+                }
+
+            }
+
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        return canAddhcps;
+
+
+    }
+
+    @Override
+    public void onClick(View v) {
+
+        switch (v.getId()) {
+            case R.id.back:
+
+                exitvideosession();
+
+                break;
+
+            case R.id.addhcp:
+
+                if (usertype.equals("1") || usertype.equals("4")) {
+                    CommonUtils.log("ADDHCP", "CANT ADD HCP");
+                } else if (reason.equals("")) {
+                    Intent intent = new Intent(this, AddSpkHcp.class);
+                    intent.putExtra("meetingid", meetingid);
+                    intent.putExtra("mandatory", "yes");
+//                    if (type.equals("2")) {
+
+//                        intent.putExtra("maxval", "1");
+//                    } else {
+//
+                    intent.putExtra("maxval", "0");
+//                    }
+                    intent.putExtra("minval", "0");
+                    intent.putExtra("from", "SIN");
+                    intent.putExtra("starttime", meeting_date);
+                    intent.putExtra("topicid", topicid);
+                    intent.putExtra("type", type);
+                    intent.putExtra("product_id", product_id);
+
+                    ArrayList<Integer> integers1 = new ArrayList<>();
+                    try {
+                        integers1.add(Integer.valueOf(spkid));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    intent.putExtra("spkUser", integers1);
+                    startActivityForResult(intent, REQ_HCP);
+                } else {
+                    CommonUtils.showError(VideoCallActivity.this, reason);
+
+                }
+
+                break;
+
+            case R.id.helponvideocall:
+                helpandsupport = true;
+                Intent intent3 = new Intent(VideoCallActivity.this, HelpActivity.class);
+                intent3.putExtra("meetingid", meetingid);
+                intent3.putExtra("from", "video");
+                startActivity(intent3);
+                break;
+
+            case R.id.helponvideocall2:
+                helpandsupport = true;
+                Intent intent1 = new Intent(VideoCallActivity.this, HelpActivity.class);
+                intent1.putExtra("meetingid", meetingid);
+                intent1.putExtra("from", "video");
+                startActivity(intent1);
+                break;
+
+            case R.id.audiosetting:
+                setaudio();
+                break;
+            case R.id.videosetting:
+                setvideo();
+
+                break;
+            case R.id.endcall:
+
+                exitvideosession();
+
+                break;
+            case R.id.swapcamera:
+
+                swapcameras();
+                break;
+
+            case R.id.info:
+
+                CommonUtils.showsimpledialogcustom(VideoCallActivity.this, description, topic);
+
+                break;
+
+            case R.id.contenticon:
+                Intent intent7 = new Intent(VideoCallActivity.this, SelectContentActivity.class);
+                intent7.putExtra("topicid", topicid);
+                intent7.putExtra("contentid", contentid);
+                intent7.putExtra("meetingid", meetingid);
+                startActivityForResult(intent7, REQ_CONTENT);
+
+                break;
+
+            case R.id.questionsection:
+
+                setarrow(1);
+                questionfunction();
+                break;
+
+            case R.id.pollsection:
+                setarrow(3);
+                pollfunction();
+                break;
+            case R.id.bottommenusec:
+//                bottommenusec.setVisibility(View.GONE);
+
+                break;
+            case R.id.mainviewvideo:
+//                bottommenusec.setVisibility(View.GONE);
+
+                break;
+
+            case R.id.questionsection2:
+                setarrow(1);
+                questionfunction();
+                break;
+            case R.id.pollsection2:
+                setarrow(3);
+                pollfunction();
+                break;
+            case R.id.swapcamera2:
+                swapcameras();
+
+                break;
+
+            case R.id.closeview:
+
+                closefuntion();
+                break;
+// For slidenotes section - dynamically change the relativelayout views
+//                case R.id.slide_notes:
+//                    if (noshowsec.getVisibility() != View.VISIBLE) {
+//                        noshowsec.setVisibility(View.VISIBLE);
+//                        final float scale = getApplicationContext().getResources().getDisplayMetrics().density;
+//                        int pixels = (int) (200 * scale + 0.5f);
+//
+//                        RelativeLayout.LayoutParams rel_btn = new RelativeLayout.LayoutParams(
+//                                ViewGroup.LayoutParams.WRAP_CONTENT, pixels);
+////                        rel_btn.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+//                        viewcontainer.setLayoutParams(rel_btn);
+//                    }else {
+//                        noshowsec.setVisibility(View.GONE);
+//                        RelativeLayout.LayoutParams parms = new RelativeLayout.LayoutParams(
+//                                RelativeLayout.LayoutParams.MATCH_PARENT,
+//                                RelativeLayout.LayoutParams.MATCH_PARENT);
+//
+//                        viewcontainer.setLayoutParams(parms);
+//
+//                    }
+//
+//                break;
+//
+//                case R.id.cross_icon:
+//
+//                noshowsec.setVisibility(View.GONE);
+//                    RelativeLayout.LayoutParams parms = new RelativeLayout.LayoutParams(
+//                            RelativeLayout.LayoutParams.MATCH_PARENT,
+//                            RelativeLayout.LayoutParams.MATCH_PARENT);
+//
+//                    viewcontainer.setLayoutParams(parms);
+//                break;
+
+//            case R.id.closezoom:
+//                closezoomwebview();
+//
+//                break;
+
+
+            case R.id.bottom_notes_speaker:
+                if (relativeLayout_preview_slide_notes.getVisibility() != View.VISIBLE) {
+                    relativeLayout_preview_slide_notes.setVisibility(View.VISIBLE);
+                } else {
+                    relativeLayout_preview_slide_notes.setVisibility(View.GONE);
+                }
+
+                break;
+
+            case R.id.cross_icon:
+                relativeLayout_preview_slide_notes.setVisibility(View.GONE);
+                break;
+
+            case R.id.bottom_notes_speaker_mobile:
+                setarrow(2);
+                NotesFunction();
+                break;
+
+            case R.id.zoomicon:
+
+//                zoomsec.setVisibility(View.VISIBLE);
+//                zoomwebview.loadUrl(contenturl);
+//                urlWebView.loadUrl("");
+
+                if (tabletSize) {
+                    setupzoomview();
+
+                } else if (usertype != null && usertype.equalsIgnoreCase("3")) {
+                    if (videocallitemrecyclerbox.getVisibility() != View.VISIBLE) {
+                        videocallitemrecyclerbox.setVisibility(View.VISIBLE);
+                        zoomicon.setImageResource(R.drawable.minimize);
+                    } else {
+                        videocallitemrecyclerbox.setVisibility(View.GONE);
+                        zoomicon.setImageResource(R.drawable.maximize);
+                    }
+                } else {
+                    videocallitemrecyclerbox.setVisibility(View.VISIBLE);
+
+                    if (mainviewvideo.getVisibility() != View.VISIBLE) {
+                        if (msgbox.getVisibility() != View.VISIBLE) {
+                            if (zoomedwebview) {
+                                closezoomwebview();
+                            } else {
+                                try {
+
+                                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                                } catch (IllegalStateException e) {
+
+                                    e.printStackTrace();
+                                }
+
+                            }
+                        }
+                    }
+                }
+                break;
+
+
+        }
+    }
+
+    private void NotesFunction() {
+        bottommenusec.setVisibility(View.VISIBLE);
+        notesFragment = new NotesFragment();
+        Bundle arguments = new Bundle();
+        arguments.putString("meetingid", meetingid);
+        arguments.putString("meeting_slide_notes", meeting_slide_notes);
+        notesFragment.setArguments(arguments);
+        fragmentManager.popBackStack("BACK_STACK_ROOT_TAG", FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        // Add the new tab fragment
+        fragmentManager.beginTransaction().replace(R.id.bottommencontainer, notesFragment).addToBackStack("BACK_STACK_ROOT_TAG").commit();
+    }
+
+
+    private void closezoomwebview() {
+//        zoomsec.setVisibility(View.GONE);
+//        zoomwebview.loadUrl("");
+//        urlWebView.loadUrl(contenturl);
+//        zoomedwebview = false;
+//        zoomicon.setImageResource(R.drawable.maximize);
+
+        boolean tabletSize = getResources().getBoolean(R.bool.isTablet);
+
+        if (!tabletSize) {
+
+            try {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            } catch (IllegalStateException e) {
+
+                e.printStackTrace();
+            }
+        } else {
+            try {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+            } catch (IllegalStateException e) {
+
+                e.printStackTrace();
+            }
+
+        }
+
+
+    }
+
+    private void pollfunction() {
+
+        bottommenusec.setVisibility(View.VISIBLE);
+        PollFragment pollFragment = new PollFragment();
+        Bundle args = new Bundle();
+        args.putString("topicid", topicid);
+        args.putString("meetingid", meetingid);
+        pollFragment.setArguments(args);
+
+        fragmentManager.popBackStack("BACK_STACK_ROOT_TAG", FragmentManager.POP_BACK_STACK_INCLUSIVE);
+
+        // Add the new tab fragment
+        fragmentManager.beginTransaction().replace(R.id.bottommencontainer, pollFragment).addToBackStack("BACK_STACK_ROOT_TAG").commit();
+    }
+
+    private void questionfunction() {
+
+
+        bottommenusec.setVisibility(View.VISIBLE);
+        question = new Question();
+        Bundle arguments = new Bundle();
+        arguments.putString("meetingid", meetingid);
+        arguments.putString("eo", repid);
+        if (primary_meeting_id != null && primary_meeting_id.length() > 0) {
+            arguments.putString("primarymeetingid", primarymeetingid);
+        } else {
+            arguments.putString("primarymeetingid", "");
+        }
+
+        question.setArguments(arguments);
+        fragmentManager.popBackStack("BACK_STACK_ROOT_TAG", FragmentManager.POP_BACK_STACK_INCLUSIVE);
+
+        // Add the new tab fragment
+        fragmentManager.beginTransaction().replace(R.id.bottommencontainer, question).addToBackStack("BACK_STACK_ROOT_TAG").commit();
+    }
+
+    private void swapcameras() {
+
+        if (CommonUtils.checkCameraFront(this)) {
+            if (mPublisher != null) {
+                mPublisher.cycleCamera();
+            }
+        } else {
+            CommonUtils.showToastMessage(getApplicationContext(), "No Front camera found");
+        }
+
+    }
+
+    private void setarrow(int i) {
+
+
+        Display display = getWindowManager().getDefaultDisplay();
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        display.getMetrics(outMetrics);
+
+        float density = getResources().getDisplayMetrics().density;
+        float dpHeight = outMetrics.heightPixels / density;
+        float dpWidth = outMetrics.widthPixels / density;
+
+        int width = displayMetrics.widthPixels;
+        int height = displayMetrics.heightPixels;
+
+        float newheight;
+
+
+        float dpval;
+
+
+        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+
+
+            if (i == 1) {
+                if (usertype.equals("1") || usertype.equals("4")) {
+                    dpval = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, (dpWidth * 10 / 100) - 20, getResources().getDisplayMetrics());
+                } else {
+                    dpval = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, (dpWidth * 10 / 100) - 20, getResources().getDisplayMetrics());
+                }
+            } else if (i == 2) {
+                if (usertype.equals("1") || usertype.equals("4")) {
+                    dpval = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, (dpWidth * 30 / 100) - 20, getResources().getDisplayMetrics());
+                } else {
+                    dpval = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, (dpWidth * 35 / 100) - 20, getResources().getDisplayMetrics());
+                }
+            } else {
+                if (usertype.equals("1") || usertype.equals("4")) {
+                    dpval = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, (dpWidth * 50 / 100) - 20, getResources().getDisplayMetrics());
+                } else {
+                    dpval = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, (dpWidth * 55 / 100) - 20, getResources().getDisplayMetrics());
+                }
+            }
+
+            newheight = height * 50 / 100;
+
+        } else {
+
+            if (i == 1) {
+                if (usertype.equals("1") || usertype.equals("4")) {
+                    dpval = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, (dpWidth * 10 / 100) - 20, getResources().getDisplayMetrics());
+                } else {
+                    dpval = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, (dpWidth * 20 / 100) - 20, getResources().getDisplayMetrics());
+                }
+
+            } else {
+                if (usertype.equals("1") || usertype.equals("4")) {
+                    dpval = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, (dpWidth * 30 / 100) - 20, getResources().getDisplayMetrics());
+                } else {
+                    dpval = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, (dpWidth * 35 / 100) - 20, getResources().getDisplayMetrics());
+                }
+            }
+
+            newheight = width * 70 / 100;
+
+
+        }
+
+        bubblelayout.setArrowPosition(dpval);
+        bottommencontainer.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) newheight));
+
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_CONTENT) {
+            if (data != null) {
+                contentid = data.getStringExtra("contentid");
+                setcontent();
+            }
+        } else if (requestCode == REQ_HCP) {
+//            callwaitingscreenapi();
+        }
+    }
+
+    public void exitvideosession() {
+
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(VideoCallActivity.this);
+
+//        builder.setTitle("Exit VideoSession");
+        builder.setCancelable(false);
+//        if (usertype.equals("1")) {
+        builder.setMessage(FontUtils.customFontCharacter(VideoCallActivity.this, "Are you sure you want to exit this session?", 1));
+//        } else {
+//            builder.setMessage("Do you want to Leave Video Session ?");
+//        }
+        //Button One : Yes
+        setContentControl();
+//Ipsen change start
+        CommonUtils.log(TAG, "Initiate Meeting :: " + meetingInitiater);
+
+        if (usertype.equals("7") || server.equals(StringConstants.ServerType.IPSEN) || server.equals(StringConstants.ServerType.CORE) && is_start.equals("1") || server.equals(StringConstants.ServerType.SPEAKER) && is_start.equals("1")) {
+            if (meetingInitiater.equals(userID) || usertype.equals("7")) {
+
+                if (primary_meeting_id == null || primary_meeting_id.length() == 0) {
+
+                    builder.setPositiveButton(FontUtils.customFontCharacter(VideoCallActivity.this, "End", 2), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+
+                            dialog.dismiss();
+                            endConfirmation();
+//                            endapi();
+
+
+                        }
+                    }).setNegativeButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Leave", 2), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                            dialog.dismiss();
+
+                            leaveapi(true);
+
+
+                        }
+                    }).setNeutralButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Cancel", 2), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
+                }
+
+            } else {
+//                if (primary_meeting_id == null || primary_meeting_id.length() == 0) {
+
+                builder.setPositiveButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Leave", 2), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+
+                        dialog.dismiss();
+
+                        leaveapi(true);
+//                            endapi();
+
+
+                    }
+                }).setNegativeButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Cancel", 2), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        dialog.dismiss();
+
+
+                    }
+                });
+//                }
+
+
+            }
+
+        } else {
+            if (repid.equals(userID)) {
+                if (usertype.equals("1") || usertype.equals("4")) {
+
+                    if (primary_meeting_id == null || primary_meeting_id.length() == 0) {
+
+                        builder.setPositiveButton(FontUtils.customFontCharacter(VideoCallActivity.this, "End", 2), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+
+                                dialog.dismiss();
+                                endConfirmation();
+//                            endapi();
+
+
+                            }
+                        });
+                    }
+                } else {
+                    builder.setPositiveButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Leave", 2), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                            dialog.dismiss();
+
+                            leaveapi(true);
+
+
+                        }
+                    });
+
+
+                }
+            } else {
+                builder.setPositiveButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Leave", 2), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        dialog.dismiss();
+
+                        leaveapi(true);
+
+
+                    }
+                });
+            }
+
+            if (repid.equals(userID)) {
+                if (usertype.equals("1") || usertype.equals("4")) {
+                    //Button Two : No
+                    if (primary_meeting_id == null || primary_meeting_id.length() == 0) {
+                        builder.setNegativeButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Leave", 2), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                                dialog.dismiss();
+
+                                leaveapi(true);
+
+
+                            }
+                        });
+                    } else {
+                        builder.setPositiveButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Leave", 2), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                                dialog.dismiss();
+
+                                leaveapi(true);
+
+
+                            }
+                        });
+                    }
+                } else {
+                    builder.setNegativeButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Cancel", 2), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                            dialog.dismiss();
+
+                        }
+                    });
+
+                }
+            } else {
+                builder.setNegativeButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Cancel", 2), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        dialog.dismiss();
+
+                    }
+                });
+
+            }
+
+            //Button Three : Neutral
+            if (repid.equals(userID)) {
+                if (usertype.equals("1") || usertype.equals("4")) {
+
+                    if (primary_meeting_id == null || primary_meeting_id.length() == 0) {
+                        builder.setNeutralButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Cancel", 2), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                                dialog.dismiss();
+                            }
+                        });
+                    } else {
+                        builder.setNegativeButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Cancel", 2), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                                dialog.dismiss();
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        AlertDialog diag = builder.create();
+        diag.show();
+    }
+
+
+    public void endConfirmation() {
+        AlertDialog.Builder alert = new AlertDialog.Builder(VideoCallActivity.this);
+        alert.setCancelable(false);
+
+        String message = "You have selected End Engagement. By ending the engagement you will no longer be able to Rejoin the engagement. Do you wish to continue?";
+        SpannableStringBuilder ssBuilder = new SpannableStringBuilder(message);
+
+        ssBuilder.setSpan(
+                new ForegroundColorSpan(Color.BLACK),
+                message.indexOf("You have selected"),
+                message.indexOf("You have selected") + String.valueOf("You have selected").length(),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        );
+
+        ssBuilder.setSpan(
+                new ForegroundColorSpan(Color.RED),
+                message.indexOf("End Engagement"),
+                message.indexOf("End Engagement") + String.valueOf("End Engagement").length(),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        );
+
+        ssBuilder.setSpan(
+                new ForegroundColorSpan(Color.BLACK),
+                message.indexOf("By ending the engagement you will"),
+                message.indexOf("By ending the engagement you will") + String.valueOf("By ending the engagement you will").length(),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        );
+
+        ssBuilder.setSpan(
+                new ForegroundColorSpan(Color.RED),
+                message.indexOf("no longer"),
+                message.indexOf("no longer") + String.valueOf("no longer").length(),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        );
+
+        ssBuilder.setSpan(
+                new ForegroundColorSpan(Color.BLACK),
+                message.indexOf("be able to Rejoin the engagement. Do you wish to continue?"),
+                message.indexOf("be able to Rejoin the engagement. Do you wish to continue?") + String.valueOf("be able to Rejoin the engagement. Do you wish to continue?").length(),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        );
+
+        alert.setMessage(FontUtils.customFontCharacter(VideoCallActivity.this, ssBuilder, 1));
+
+        alert.setPositiveButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Yes", 2), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                endapi();
+            }
+        }).setNegativeButton(FontUtils.customFontCharacter(VideoCallActivity.this, "No", 2), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        AlertDialog dialog = alert.create();
+        dialog.show();
+
+    }
+
+
+    private void leaveapi(boolean fin) {
+
+        disconnectSession(fin);
+
+
+    }
+
+    private void leaveapi2(boolean fin) {
+
+        disconnectSession2(fin);
+
+
+    }
+
+    private void endapi() {
+
+//        showalert(VideoCallActivity.this, "End");
+        endapicall();
+
+//        String url = Baseurl + UrlConstants.END_MEETING + meetingid;
+//        volleyUtils.callnetworkrequest(VideoCallActivity.this, this, 2, url, null, TAG, UrlConstants.REQ_END_MEETING, 1, true);
+
+
+    }
+
+    private void setvideo() {
+
+        if (mPublisher != null) {
+
+
+            if (hasvideo) {
+
+                hasvideo = false;
+                mPublisher.setPublishVideo(false);
+                videosettings.setImageResource(R.drawable.mutevideoicon);
+
+            } else {
+
+                hasvideo = true;
+                mPublisher.setPublishVideo(true);
+                videosettings.setImageResource(R.drawable.normalvideoicon);
+
+            }
+
+
+        }
+
+
+    }
+
+    private void setaudio() {
+
+        if (mPublisher != null) {
+
+            if (hasaudio) {
+                hasaudio = false;
+                mPublisher.setPublishAudio(false);
+                audiosettings.setImageResource(R.drawable.muteaudioicon);
+            } else {
+                hasaudio = true;
+                mPublisher.setPublishAudio(true);
+                audiosettings.setImageResource(R.drawable.normalaudioicon);
+            }
+        }
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
+    }
+
+    @AfterPermissionGranted(RC_VIDEO_APP_PERM)
+    private void requestPermissions() {
+
+
+        String[] perms = {Manifest.permission.INTERNET, Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.MODIFY_AUDIO_SETTINGS, Manifest.permission.BLUETOOTH, Manifest.permission.BROADCAST_STICKY, Manifest.permission.READ_PHONE_STATE};
+        if (EasyPermissions.hasPermissions(this, perms)) {
+            // initialize view objects from your layout
+            // mSubscriberViewContainer = findViewById(R.id.subscriber_container);
+
+            // initialize and connect to the session
+            CommonUtils.log("Connecting", "tokbox");
+
+            mSession = new Session.Builder(this, TOKBOX_API_KEY, SESSION_ID).build();
+            mSession.setSessionListener(this);
+
+            mSession.setStreamPropertiesListener(this);
+
+            mSession.connect(TOKEN);
+
+        } else {
+
+            EasyPermissions.requestPermissions(this, "This app needs access to your camera and mic to make video calls", RC_VIDEO_APP_PERM, perms);
+        }
+
+    }
+
+
+    @Override
+    public void onConnected(Session session) {
+
+//        if (!usertype.equals("4")) {
+        CommonUtils.log(LOG_TAG, "Session Connected");
+
+
+        mPublisher = new Publisher.Builder(this).build();
+        mPublisher.setPublisherListener(this);
+        mPublisher.setName(userID);
+        mPublisher.getRenderer().setStyle(BaseVideoRenderer.STYLE_VIDEO_SCALE, BaseVideoRenderer.STYLE_VIDEO_FILL);
+        mPublisher.setPublishVideo(true);
+
+//        if (usertype.equals("3")) {
+//            spkid = userID;
+//
+//        } else if (usertype.equals("1") || usertype.equals("4")) {
+//
+//            if (repid.equals("")) {
+//                repid = userID;
+//            }
+//        }
+
+
+        mSession.publish(mPublisher);
+
+        VideoCallDomain videoCallDomain = new VideoCallDomain("myvideo", mPublisher, mSession, null, true);
+
+
+        videocallmap.put(userID, videoCallDomain);
+        callAdapter.videocallmap = videocallmap;
+
+//        callAdapter.notifyDataSetChanged();
+
+        try {
+            int pos = videoplaylist.indexOf(userID);
+
+
+            if (mainviewvideo.getVisibility() == View.VISIBLE) {
+
+                if (pos == zoompos || zoomuser.equals(userID)) {
+
+                    zoomview(pos, "onchange", userID);
+
+                }
+
+            } else {
+
+                callAdapter.notifyItemChanged(pos);
+            }
+
+        } catch (Exception e) {
+            callAdapter.notifyDataSetChanged();
+        }
+
+
+        chechrepspkfuntion();
+
+
+//        }
+
+    }
+
+    //session functions
+
+    @Override
+    public void onDisconnected(Session session) {
+
+        CommonUtils.log(LOG_TAG, "Session Disconnected");
+        callAdapter.notifyDataSetChanged();
+    }
+
+
+    @Override
+    public void onStreamReceived(Session session, final Stream stream) {
+
+        CommonUtils.log(LOG_TAG, "Stream Received" + stream.getStreamId() + "STREAM NAME = " + stream.getName() + "myid=" + userID + "From user - > " + fromUser + "Meeting DM -> " + meetingDMID);
+        //changed- below code was find the current user dm or owner dm
+        boolean nodm = false;
+        if (fromUser.equalsIgnoreCase(meetingDMID)) {
+
+            nodm = true;
+        } else {
+            if (!usertype.equals("1") && stream.getName().equalsIgnoreCase(meetingDMID)) {
+                nodm = false;
+            } else {
+                nodm = true;
+            }
+        }
+        if (!stream.getName().equals(userID) && nodm) {
+            Subscriber mSubscriber = new Subscriber.Builder(VideoCallActivity.this, stream).build();
+            mSubscriber.getRenderer().setStyle(BaseVideoRenderer.STYLE_VIDEO_SCALE, BaseVideoRenderer.STYLE_VIDEO_FILL);
+            mSubscriber.setSubscribeToVideo(true);
+            mSubscriber.setAudioLevelListener(this);
+
+            String subscriberid = mSubscriber.getStream().getName();
+            CommonUtils.log(TAG, " Repid=" + repid + "\n Spkid=" + spkid + "\n  subscriberid=" + subscriberid + "\n");
+
+            if (repid.equals(subscriberid)) {
+                isreponline = true;
+            }
+
+
+            if (usertype.equalsIgnoreCase("1") || usertype.equalsIgnoreCase("4")) {
+
+                if (primary_meeting_id != null && primary_meeting_id.length() > 0) {
+                    CommonUtils.log(TAG, "primary EO ID=" + PrimaryEO_id + "\n");
+                    if (PrimaryEO_id.equals(subscriberid)) {
+                        isreponline = true;
+                    }
+
+                }
+            }
+
+            if (spkid.equals(subscriberid)) {
+                isspeakeronline = true;
+            }
+
+
+            session.subscribe(mSubscriber);
+
+            try {
+
+                VideoCallDomain videoCallDomain = new VideoCallDomain("others", mPublisher, session, mSubscriber, true);
+
+                if (videoCallDomain.getSubscriber().getView().getParent() != null)
+                    ((ViewGroup) videoCallDomain.getSubscriber().getView().getParent()).removeView(videoCallDomain.getSubscriber().getView());
+
+
+                videocallmap.put(subscriberid, videoCallDomain);
+                callAdapter.videocallmap = videocallmap;
+
+
+                boolean listcontain = false;
+                for (int i = 0; i < videocallllist.size(); i++) {
+                    if (videocallllist.get(i).equals(stream.getName())) {
+                        listcontain = true;
+                        break;
+
+                    }
+                }
+                boolean shouldadd = true;
+                if (listcontain) {
+                    for (int j = 0; j < videoplaylist.size(); j++) {
+                        if (videoplaylist.get(j).equals(stream.getName())) {
+                            shouldadd = false;
+                        }
+                    }
+                }
+
+
+                if (shouldadd && listcontain) {
+                    videoplaylist.add(stream.getName());
+                    callAdapter.videocallllist = videoplaylist;
+                    callAdapter.notifyDataSetChanged();
+                }
+
+                try {
+                    int pos = videoplaylist.indexOf(stream.getName());
+
+
+                    if (mainviewvideo.getVisibility() == View.VISIBLE) {
+
+                        if (pos == zoompos || zoomuser.equals(stream.getName())) {
+
+                            zoomview(pos, "onchange", stream.getName());
+
+                        }
+
+                    } else {
+
+                        callAdapter.notifyItemChanged(pos);
+                    }
+
+                } catch (Exception e) {
+                    callAdapter.notifyDataSetChanged();
+                }
+
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            chechrepspkfuntion();
+        }
+
+    }
+
+    @Override
+    public void onStreamDropped(Session session, final Stream stream) {
+
+        String subscriberid = stream.getName();
+
+        if (usertype.equals("1")) {
+            String name = "";
+            for (int i = 0; i < usertypehcp.size(); i++) {
+                if (usertypehcp.get(i).equals(subscriberid)) {
+                    VideoProfileDomain videoProfileDomain = (VideoProfileDomain) profilemap.get(subscriberid);
+
+                    if (videoProfileDomain != null) {
+                        name = videoProfileDomain.getName();
+
+                    }
+
+                    break;
+                }
+            }
+
+            if (!name.equals("")) {
+
+                hcpleft.setVisibility(View.VISIBLE);
+                hcpleft.setText(name + " left the session");
+                cancelhcptimer();
+                starttimerHCP();
+
+            }
+        }
+        removedstream = stream.getName();
+
+        if (primary_meeting_id != null && primary_meeting_id.length() > 0) {
+            repid = PrimaryEO_id;
+        }
+
+        if (repid.equals(subscriberid)) {
+            isreponline = false;
+        }
+
+
+        if (spkid.equals(subscriberid)) {
+            isspeakeronline = false;
+        }
+
+        VideoCallDomain videoCallDomain = (VideoCallDomain) callAdapter.videocallmap.get(stream.getName());
+
+        try {
+            if (videoCallDomain != null) {
+                if (videoCallDomain.getSubscriber().getView().getParent() != null)
+                    ((ViewGroup) videoCallDomain.getSubscriber().getView().getParent()).removeView(videoCallDomain.getSubscriber().getView());
+
+            }
+            if (!stream.getName().equals(userID)) {
+                videocallmap.remove(stream.getName());
+            }
+
+            callAdapter.videocallmap = videocallmap;
+
+            try {
+                int pos = videoplaylist.indexOf(stream.getName());
+
+                removefuntion(pos, stream.getName());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                callAdapter.notifyDataSetChanged();
+
+                leaveapi(false);
+                setviews();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        chechrepspkfuntion();
+    }
+
+    private void chechrepspkfuntion() {
+        boolean meetingStartUser = false;
+        if (server.equalsIgnoreCase(StringConstants.ServerType.IPSEN) || server.equalsIgnoreCase(StringConstants.ServerType.CORE) && is_start != null && is_start.equals("1") || server.equalsIgnoreCase(StringConstants.ServerType.AVEXIS) && type.equalsIgnoreCase("1")) {
+            if (spkUser.equalsIgnoreCase(meetingInitiater)) {
+                meetingStartUser = true;
+            }
+            CommonUtils.log(TAG, "checkkk  >>  " + meetingStartUser);
+
+            msgbox.setVisibility(View.GONE);
+
+            if (!usertype.equals("3")) {
+                if (zoomedwebview) {
+                    closezoomwebview();
+                }
+            }
+
+            if (meetingStartUser) {
+                if (!contentControl) {
+                    if (!meetingInitiater.equals(userID)) {
+                        if (isspeakeronline) {
+                            urlWebView.setVisibility(View.VISIBLE);
+                            zoomicon.setVisibility(View.VISIBLE);
+                        } else {
+                            urlWebView.setVisibility(View.INVISIBLE);
+                            zoomicon.setVisibility(View.INVISIBLE);
+
+                        }
+
+                    }
+                }
+
+            } else {
+                if (!contentControl) {
+                    if (!meetingInitiater.equals(userID)) {
+                        if (isreponline) {
+                            urlWebView.setVisibility(View.VISIBLE);
+                            zoomicon.setVisibility(View.VISIBLE);
+                        } else {
+                            urlWebView.setVisibility(View.INVISIBLE);
+                            zoomicon.setVisibility(View.INVISIBLE);
+                        }
+
+                    }
+                }
+            }
+            if (usertype.equals("4")) {
+                if (!myDmMeeting) {
+                    videosettings.setEnabled(false);
+                    audiosettings.setEnabled(false);
+                } else {
+                    videosettings.setEnabled(true);
+                    audiosettings.setEnabled(true);
+                }
+            } else {
+                videosettings.setEnabled(true);
+                audiosettings.setEnabled(true);
+            }
+
+            if (usertype.equalsIgnoreCase("7")) {
+                urlWebView.setVisibility(View.VISIBLE);
+                zoomicon.setVisibility(View.VISIBLE);
+            }
+        } else if (server.equalsIgnoreCase(StringConstants.ServerType.SPEAKER) && StringConstants.BRAND_NAME.equalsIgnoreCase(StringConstants.ServerType.IPSEN) || server.equalsIgnoreCase(StringConstants.ServerType.SPEAKER) && StringConstants.BRAND_NAME.equalsIgnoreCase(StringConstants.ServerType.AVEXIS) && type.equalsIgnoreCase("1")) {
+
+            // gone webview
+            if (!contentControl) {
+                if (!isreponline) {
+                    urlWebView.setVisibility(View.INVISIBLE);
+                    zoomicon.setVisibility(View.INVISIBLE);
+                } else {
+                    urlWebView.setVisibility(View.VISIBLE);
+                    zoomicon.setVisibility(View.VISIBLE);
+                }
+            }
+
+
+            msgbox.setVisibility(View.GONE);
+
+
+            if (zoomedwebview) {
+                closezoomwebview();
+            }
+
+        } else if (server.equalsIgnoreCase(StringConstants.ServerType.SPEAKER) && is_start != null && is_start.equals("1")) {
+
+            // gone webview
+            if (!contentControl) {
+//                if (!isreponline) {
+//                    urlWebView.setVisibility(View.INVISIBLE);
+//                } else {
+//                    urlWebView.setVisibility(View.VISIBLE);
+//                }
+                if (!meetingInitiater.equals(userID)) {
+                    if (isreponline) {
+                        urlWebView.setVisibility(View.VISIBLE);
+                        zoomicon.setVisibility(View.VISIBLE);
+                    } else {
+                        urlWebView.setVisibility(View.INVISIBLE);
+                        zoomicon.setVisibility(View.INVISIBLE);
+                    }
+                } else {
+                    urlWebView.setVisibility(View.INVISIBLE);
+                    zoomicon.setVisibility(View.INVISIBLE);
+                }
+            }
+
+
+            msgbox.setVisibility(View.GONE);
+
+
+            if (zoomedwebview) {
+                closezoomwebview();
+            }
+
+        } else {
+
+
+            if (!usertype.equals("3")) {
+
+                CommonUtils.log("videospeaker", usertype);
+                CommonUtils.log("videospeaker", String.valueOf(isspeakeronline));
+
+                if (!isspeakeronline) {
+
+                    msgbox.setVisibility(View.VISIBLE);
+                    msgbox.setText("Speaker not available at the moment.");
+                    urlWebView.reload();
+
+//                if (zoomsec.getVisibility() == View.VISIBLE) {
+//                    closezoomwebview();
+//                }
+
+                    if (zoomedwebview) {
+                        closezoomwebview();
+                    }
+
+
+                } else {
+
+
+                    msgbox.setVisibility(View.GONE);
+                    urlWebView.reload();
+
+                }
+
+            }
+
+//        if (!usertype.equals("1") || !usertype.equals("4")) {
+            CommonUtils.log("videosrep", String.valueOf(isreponline));
+            if (!isreponline) {
+
+                videosettings.setEnabled(false);
+                audiosettings.setEnabled(false);
+                contenticon.setEnabled(false);
+
+                if (mPublisher != null) {
+                    mPublisher.setPublishVideo(false);
+                    mPublisher.setPublishAudio(false);
+                }
+
+                msgbox.setVisibility(View.VISIBLE);
+                msgbox.setText("EO not available at the moment.");
+                urlWebView.reload();
+//            if (zoomsec.getVisibility() == View.VISIBLE) {
+//                closezoomwebview();
+//            }
+
+                if (zoomedwebview) {
+                    closezoomwebview();
+                }
+
+            } else {
+
+                if (!myDmMeeting) {
+                    videosettings.setEnabled(false);
+                    audiosettings.setEnabled(false);
+                } else {
+                    videosettings.setEnabled(true);
+                    audiosettings.setEnabled(true);
+                }
+
+//            videosettings.setEnabled(true);
+//            audiosettings.setEnabled(true);
+                contenticon.setEnabled(true);
+
+                if (mPublisher != null) {
+                    if (hasvideo) {
+                        mPublisher.setPublishVideo(true);
+                    } else {
+                        mPublisher.setPublishVideo(false);
+                        mPublisher.setPublishVideo(false);
+                    }
+
+                    if (hasaudio) {
+                        mPublisher.setPublishAudio(true);
+                    } else {
+                        mPublisher.setPublishAudio(false);
+                    }
+                }
+
+
+                if (!usertype.equals("3")) {
+                    if (isspeakeronline) {
+
+                        msgbox.setVisibility(View.GONE);
+                    } else {
+
+                        msgbox.setVisibility(View.VISIBLE);
+                        msgbox.setText("Speaker not available at the moment.");
+                        urlWebView.reload();
+//                    if (zoomsec.getVisibility() == View.VISIBLE) {
+//                        closezoomwebview();
+//                    }
+
+                        if (zoomedwebview) {
+                            closezoomwebview();
+                        }
+                    }
+                } else {
+                    msgbox.setVisibility(View.GONE);
+                }
+            }
+//        }
+
+            callAdapter.notifyDataSetChanged();
+        }
+    }
+
+
+    @Override
+    public void onError(Session session, OpentokError opentokError) {
+
+        CommonUtils.log("failedtoconnect", "Session Error" + opentokError.getErrorCode() + opentokError.getMessage());
+
+//        if (opentokError.getErrorCode().equals(ConnectionDropped)) {
+        showvideoError(VideoCallActivity.this, opentokError.getMessage());
+//        }
+
+    }
+
+    public void showvideoError(Context context, final String msg) {
+
+        if (context instanceof Activity) {
+            Activity activity = (Activity) context;
+            if (!activity.isFinishing()) {
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                builder.setMessage(FontUtils.customFontCharacter(context, msg, 1)).setCancelable(false).setPositiveButton(FontUtils.customFontCharacter(context, "Ok", 2), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        dialog.dismiss();
+                        mSession.disconnect();
+                        finish();
+
+                    }
+                });
+                AlertDialog alert = builder.create();
+                alert.show();
+
+            }
+        }
+    }
+
+    @Override
+    public void onStreamCreated(PublisherKit publisherKit, Stream stream) {
+
+        CommonUtils.log(LOG_TAG, "publisher stream created");
+
+        audiosettings.setEnabled(true);
+        videosettings.setEnabled(true);
+
+        chechrepspkfuntion();
+
+        callAdapter.notifyDataSetChanged();
+
+    }
+
+
+    //publisher methods
+
+    @Override
+    public void onStreamDestroyed(PublisherKit publisherKit, Stream stream) {
+
+        CommonUtils.log(LOG_TAG, "on stream destroyed");
+
+        removedstream = stream.getName();
+
+        if (!stream.getName().equals(userID)) {
+            videocallmap.remove(stream.getName());
+        }
+        callAdapter.videocallmap = videocallmap;
+
+        try {
+            int pos = videoplaylist.indexOf(stream.getName());
+
+            removefuntion(pos, stream.getName());
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            removedstream = "";
+            callAdapter.notifyDataSetChanged();
+
+            leaveapi(false);
+            setviews();
+        }
+    }
+
+    private void removefuntion(int pos, String name) {
+
+        try {
+
+            int removepos = -1;
+            if (!usertype.equals("2")) {
+
+                if (usertype.equals("1")) {
+                    if (primary_meeting_id.length() != 0) {
+                        if (pos != 1 && pos != 0 && pos != 2) {
+//                            videoplaylist.remove(pos);
+                            removepos = pos;
+                        }
+                    } else {
+                        if (pos != 1 && pos != 0) {
+//                            videoplaylist.remove(pos);
+                            removepos = pos;
+                        }
+                    }
+
+                } else {
+                    if (pos != 1 && pos != 0) {
+//                        videoplaylist.remove(pos);
+                        removepos = pos;
+                    }
+                }
+            } else {
+                if (pos != 1 && pos != 0 && pos != 2) {
+//                    videoplaylist.remove(pos);
+                    removepos = pos;
+                }
+            }
+
+
+            if (mainviewvideo.getVisibility() == View.VISIBLE) {
+
+
+                if (pos == zoompos || zoomuser.equals(name)) {
+
+                    if (removepos == -1) {
+                        zoomview(pos, "onchange", name);
+                    } else {
+                        closefuntion();
+                    }
+                }
+
+            } else {
+                removedstream = "";
+            }
+
+            if (removepos != -1) {
+                videoplaylist.remove(removepos);
+            }
+
+            callAdapter.videocallllist = videoplaylist;
+            callAdapter.notifyDataSetChanged();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            removedstream = "";
+
+        }
+    }
+
+    @Override
+    public void onError(PublisherKit publisherKit, OpentokError opentokError) {
+
+        CommonUtils.log(LOG_TAG, "publisherkit onError" + opentokError.getMessage());
+
+
+    }
+
+    @Override
+    public void onConnected(SubscriberKit subscriberKit) {
+
+        CommonUtils.log(LOG_TAG, "subscriberkit connected");
+
+    }
+
+
+    //subscriberkit methods
+
+    @Override
+    public void onDisconnected(SubscriberKit subscriberKit) {
+
+        CommonUtils.log(LOG_TAG, "Subscriberkit onDisconnected");
+
+        mSession = null;
+//        callAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onError(SubscriberKit subscriberKit, OpentokError opentokError) {
+
+        CommonUtils.log(LOG_TAG, "Subscriberkit onError");
+//        callAdapter.notifyDataSetChanged();
+    }
+
+
+    private void callheadapi(String id) {
+
+        String url = Baseurl + UrlConstants.PROFILE_HEAD_URL + id;
+
+        volleyUtils.callnetworkrequest(VideoCallActivity.this, this, 2, url, null, TAG, UrlConstants.REQ_PROFILE_HEAD_URL, 1, false, false);
+    }
+
+    @Override
+    public void SuccessResponse(JSONObject response, int requestcode) {
+
+        try {
+            CommonUtils.log(TAG, response.toString(4));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        if (requestcode == UrlConstants.REQ_PROFILE_HEAD_URL) {
+            getprofileinfo(response);
+
+        } else if (requestcode == UrlConstants.REQ_CONTENT_EO_URL_IPSEN) {
+            setupwebview(response, false);
+        } else if (requestcode == UrlConstants.REQ_CONTENT_SPK_URL_IPSEN) {
+            setupwebview(response, true);
+        } else if (requestcode == UrlConstants.REQ_CONTENT_OTHERS_URL) {
+            setupwebview(response, true);
+        } else if (requestcode == UrlConstants.REQ_CONTENT_SPEAKR_URL) {
+            setupwebview(response, false);
+        } else if (requestcode == UrlConstants.REQ_END_MEETING) {
+            endfuntion(response);
+        } else if (requestcode == UrlConstants.REQ_WAITING_SCREEN_URL) {
+            setarrayfuntion(response);
+        } else if (requestcode == UrlConstants.REQ_LIVE_SESSION) {
+            setarrayfuntion(response);
+        }
+    }
+
+
+    private void endfuntion(JSONObject response) {
+
+        try {
+
+            boolean status = response.optBoolean("apiStatus");
+            String message = "";
+            if (status) {
+                message = response.getString("message");
+            } else {
+                message = response.optJSONObject("result").optString("message");
+            }
+
+//            CommonUtils.showToastMessage(getApplicationContext(), message);
+
+
+            if (mSession != null) {
+                mSession.disconnect();
+            }
+
+//            for (int i = 0; i < paths.size(); i++) {
+//                if (!VideoCallActivity.this.isFinishing()) {
+//                    mDatabase.child(paths.get(i)).removeEventListener(valueEventListener);
+//                }
+//            }
+            if (valueEventListener != null) {
+                mDatabase.removeEventListener(valueEventListener);
+            }
+
+            EORedirectionAlert();
+//            Intent closeoutIntent = new Intent(VideoCallActivity.this, CloseoutActivity.class);
+//            closeoutIntent.putExtra("mydetails", "");
+//            closeoutIntent.putExtra("meetingid", meetingid);
+//            closeoutIntent.putExtra("canedit", "yes");
+//
+//            startActivity(closeoutIntent);
+//            finish();
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void liveFuntion(JSONObject response) {
+
+        try {
+            JSONObject resultObj = response.getJSONObject("result");
+            String Eo = resultObj.getString("Eo");
+            String Speaker = resultObj.getString("Speaker");
+
+            JSONArray participantDetailsArray = response.getJSONArray("participantDetails");
+
+            for (int i = 0; i < participantDetailsArray.length(); i++) {
+                JSONObject participantDetailsObj = participantDetailsArray.getJSONObject(i);
+
+                String participantId = participantDetailsObj.getString("participant");
+                String userType = participantDetailsObj.getString("userType");
+                String status = participantDetailsObj.getString("status");
+                String firstName = participantDetailsObj.getString("firstName");
+                String lastName = participantDetailsObj.getString("lastName");
+                String meeting = participantDetailsObj.getString("meeting");
+
+            }
+
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void EORedirectionAlert() {
+        AlertDialog.Builder alert = new AlertDialog.Builder(VideoCallActivity.this);
+        alert.setCancelable(false);
+        alert.setMessage(FontUtils.customFontCharacter(VideoCallActivity.this, "The meeting has ended. Would you like to close out?", 1));
+        alert.setPositiveButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Yes", 2), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                Intent closeoutIntent = new Intent(VideoCallActivity.this, CloseoutActivity.class);
+                closeoutIntent.putExtra("mydetails", "");
+                closeoutIntent.putExtra("meetingid", meetingid);
+                closeoutIntent.putExtra("canedit", "yes");
+
+                startActivity(closeoutIntent);
+                finish();
+            }
+        }).setNegativeButton("No", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                finish();
+            }
+        });
+        AlertDialog dialog = alert.create();
+        dialog.show();
+
+    }
+
+    private void setupwebview(JSONObject response, boolean b) {
+
+        try {
+
+            JSONArray result = response.getJSONArray("result");
+            for (int i = 0; i < result.length(); i++) {
+                JSONObject object = result.getJSONObject(i);
+                contenturl = object.getString("contenturl");
+
+                CommonUtils.log("contenturl", contenturl);
+                if (b) {
+                    int j = Baseurl.lastIndexOf(":");
+                    String[] a = {Baseurl.substring(0, j), Baseurl.substring(i)};
+                    String port = a[1].replaceAll("[^0-9]", "");
+
+                    if (!contenturl.contains(port)) {
+                        contenturl = contenturl + "&port=" + port;
+                    }
+                }
+                CommonUtils.log("WEB contenturl", contenturl);
+                urlWebView.loadUrl(contenturl);
+            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void getprofileinfo(JSONObject response) {
+
+        try {
+
+            JSONObject result = response.getJSONObject("result");
+
+            JSONObject profile_information = result.getJSONObject("profile_information");
+
+
+            String firstName = profile_information.getString("firstName");
+            String lastName = profile_information.getString("lastName");
+            String photo = profile_information.getString("photo");
+            String photo_path = profile_information.getString("photo_path");
+
+
+            String userType1 = "";
+            String imgletr;
+            String firstletter = String.valueOf(firstName.charAt(0));
+
+            if (lastName != null && !lastName.equals("")) {
+                String lastletter = String.valueOf(lastName.charAt(0));
+                imgletr = firstletter + lastletter;
+            } else {
+                imgletr = firstletter;
+            }
+
+
+            VideoProfileDomain videoProfileDomain1 = new VideoProfileDomain(apiid, userType1, firstName + " " + lastName, Baseurl + photo_path + photo, imgletr);
+            profilemap.put(apiid, videoProfileDomain1);
+
+            apiinprogress = false;
+            apiid = "";
+            callAdapter.notifyDataSetChanged();
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public void ErrorResponse(String msg, int requestcode) {
+
+        apiinprogress = false;
+        apiid = "";
+    }
+
+    @Override
+    public void callprofileapi(String id) {
+
+        if (!apiinprogress) {
+            apiid = id;
+            apiinprogress = true;
+            callheadapi(id);
+        }
+    }
+
+    @Override
+    public void refreshconnection() {
+//        requestPermissions();
+
+    }
+
+    private void closefuntion() {
+
+
+        callAdapter.pos = -1;
+        callAdapter.videocallmap = videocallmap;
+
+
+        mainviewvideo.setVisibility(View.GONE);
+        mPublisherViewContainer.removeAllViews();
+        emptyview.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        emptyview.setVisibility(View.GONE);
+
+
+        if (usertype.equals("1") || usertype.equals("4")) {
+            bottombar1.setVisibility(View.VISIBLE);
+        } else {
+            bottombar2.setVisibility(View.VISIBLE);
+        }
+
+        callsettingslayout.setVisibility(View.VISIBLE);
+        recyclerView.setVisibility(View.VISIBLE);
+//        if (zoompos != -1 && zoomuser.equals("")) {
+//
+//            callAdapter.notifyItemChanged(zoompos);
+//            recyclerView.scrollToPosition(zoompos);
+//        } else {
+        callAdapter.notifyDataSetChanged();
+//        }
+
+        zoompos = -1;
+        zoomuser = "";
+        removedstream = "";
+
+//        if (!removedstream.equals("")) {
+//            try {
+//                int pos = videoplaylist.indexOf(removedstream);
+//
+//                removefuntion(pos, removedstream);
+//                removedstream = "";
+//
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//                removedstream = "";
+//            }
+//        }
+//        callAdapter.notifyDataSetChanged();
+
+
+    }
+
+    @Override
+    public void zoomview(int position, String from, String userid) {
+
+
+        if (bottombar1.getVisibility() == View.VISIBLE) {
+            bottombar1.setVisibility(View.GONE);
+        } else if (bottombar2.getVisibility() == View.VISIBLE) {
+            bottombar2.setVisibility(View.GONE);
+        }
+
+        boolean tabletSize = getResources().getBoolean(R.bool.isTablet);
+
+        if (!tabletSize) {
+            boolean proceed;
+            if (from.equals("adapter")) {
+                proceed = mainviewvideo.getVisibility() != View.VISIBLE;
+            } else {
+                proceed = true;
+            }
+
+            if (proceed) {
+
+                try {
+
+                    zoompos = videoplaylist.indexOf(userid);
+                    zoomuser = userid;
+
+                    if (videocallmap != null) {
+
+                        final VideoCallDomain videoCallDomain = (VideoCallDomain) videocallmap.get(userid);
+                        final VideoProfileDomain videoProfileDomain = (VideoProfileDomain) profilemap.get(userid);
+
+
+                        if (videoProfileDomain != null) {
+
+                            mainviewvideo.setVisibility(View.VISIBLE);
+
+                            String profilepic = videoProfileDomain.getPhoto();
+                            String profilename = videoProfileDomain.getName();
+
+                            String imgletr = videoProfileDomain.getImgltr();
+
+                            CommonUtils.log("videocallitem", profilepic);
+
+                            TextDrawable drawable = CommonUtils.createtextdrawablesquare(VideoCallActivity.this, imgletr, "small");
+                            CommonUtils.log("videocallitem", profilepic);
+                            CommonUtils.setvideoimg(VideoCallActivity.this, profilepic, drawable, videopic);
+//                        CommonUtils.setImage(VideoCallActivity.this, profilepic, drawable, videopic);
+                            videoname.setText(profilename);
+
+                        }
+
+                        int EM = CommonUtils.dpToPx(132);
+                        emptyview.setLayoutParams(new RelativeLayout.LayoutParams(newwidth[0] + EM, newwidth[0] + EM));
+                        emptyview.setVisibility(View.VISIBLE);
+                        callsettingslayout.setVisibility(View.GONE);
+
+
+                        callAdapter.videocallmap = emptymap;
+                        callAdapter.notifyDataSetChanged();
+                        recyclerView.removeAllViewsInLayout();
+
+                        recyclerView.setVisibility(View.GONE);
+
+                        if (videoCallDomain != null) {
+                            active.setImageResource(R.drawable.online);
+                            CommonUtils.log("VideoAdapter", "video domain  not  null");
+                            String type = videoCallDomain.getType();
+
+                            if (type.equals("myvideo")) {
+
+                                Publisher publisher = videoCallDomain.getPublisher();
+                                if (publisher != null) {
+                                    CommonUtils.log("VideoAdapter", "publisher  not  null");
+                                    if (publisher.getStream() != null) {
+
+
+                                        CommonUtils.log("VideoAdapter", "publisher stream  not  null");
+
+                                        CommonUtils.log("publishervideo", String.valueOf(publisher.getStream().hasVideo()));
+                                        if (!publisher.getStream().hasVideo()) {
+                                            mPublisherViewContainer.setVisibility(View.GONE);
+                                        } else {
+                                            mPublisherViewContainer.setVisibility(View.VISIBLE);
+
+                                        }
+                                    } else {
+
+                                        CommonUtils.log("VideoAdapter", "publisher stream null");
+
+                                    }
+
+                                    if (publisher.getView().getParent() != null)
+                                        ((ViewGroup) publisher.getView().getParent()).removeView(publisher.getView());
+
+
+                                    mPublisherViewContainer.addView(publisher.getView());
+
+//                        else {
+//                            holder.mPublisherViewContainer.setVisibility(View.GONE);
+//                        }
+
+
+                                } else {
+
+                                    CommonUtils.log("VideoAdapter", "publisher  null");
+
+                                }
+
+
+                            } else if (type.equals("others")) {
+
+                                Subscriber subscriber = videoCallDomain.getSubscriber();
+                                if (subscriber != null) {
+
+                                    CommonUtils.log("VideoAdapter", "subscriber  not  null");
+                                    if (subscriber.getStream() != null) {
+
+                                        CommonUtils.log("VideoAdapter", "subscriber  stream  not  null");
+
+                                        if (!subscriber.getStream().hasVideo()) {
+                                            mPublisherViewContainer.setVisibility(View.GONE);
+                                        } else {
+                                            mPublisherViewContainer.setVisibility(View.VISIBLE);
+
+                                        }
+                                    } else {
+
+                                        CommonUtils.log("VideoAdapter", "subsriber stream null");
+
+                                    }
+
+                                    if (subscriber.getView().getParent() != null)
+                                        ((ViewGroup) subscriber.getView().getParent()).removeView(subscriber.getView());
+
+
+                                    mPublisherViewContainer.addView(subscriber.getView());
+
+                                    // view.bringToFront();
+
+                                } else {
+
+                                    CommonUtils.log("VideoAdapter", "subsriber  null");
+
+                                }
+
+                            }
+
+                        } else {
+
+                            active.setImageResource(R.drawable.ofline);
+                            mPublisherViewContainer.setVisibility(View.GONE);
+
+
+                            CommonUtils.log("VideoAdapter", "videodomain  null");
+
+
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+
+                }
+
+            }
+        }
+
+    }
+
+    @Override
+    public void onStreamHasAudioChanged(Session session, Stream stream, boolean b) {
+
+    }
+
+    @Override
+    public void onStreamHasVideoChanged(Session session, Stream stream, boolean b) {
+
+//        callAdapter.notifyDataSetChanged();
+
+        try {
+            final int pos = videoplaylist.indexOf(stream.getName());
+
+            CommonUtils.log("positionofvideo", String.valueOf(pos));
+
+            if (mainviewvideo.getVisibility() == View.VISIBLE) {
+
+                if (pos == zoompos || zoomuser.equals(stream.getName())) {
+
+                    zoomview(pos, "onchange", stream.getName());
+
+                }
+
+            } else {
+
+                callAdapter.notifyItemChanged(pos);
+
+            }
+        } catch (Exception e) {
+
+            callAdapter.notifyDataSetChanged();
+
+        }
+
+    }
+
+
+    @Override
+    public void onStreamVideoDimensionsChanged(Session session, Stream stream, int i, int i1) {
+
+    }
+
+    @Override
+    public void onStreamVideoTypeChanged(Session session, Stream stream, Stream.StreamVideoType streamVideoType) {
+
+    }
+
+    @Override
+    public void onCallBack(String value, CallbackDomain callbackDomain, String pollid, String polltitle, String finalStatus) {
+
+        if (value.equals("back")) {
+            onBackPressed();
+        } else if (value.equals("compose")) {
+
+            Bundle arguments = new Bundle();
+            arguments.putString("from", "compose");
+            arguments.putString("meetingid", meetingid);
+            arguments.putString("qid", "");
+            arguments.putString("question", "");
+            arguments.putString("eo", repid);
+            if (primary_meeting_id != null && primary_meeting_id.length() > 0) {
+                arguments.putString("primarymeetingid", primarymeetingid);
+            } else {
+                arguments.putString("primarymeetingid", "");
+            }
+            compose_question = new Compose_Question();
+            compose_question.setArguments(arguments);
+
+            addFragmentOnTop(compose_question);
+
+        } else if (value.equals("Poll")) {
+
+            PollDetailsFragment pollTopicFragment = new PollDetailsFragment();
+            Bundle arguments = new Bundle();
+            arguments.putString("meetingid", meetingid);
+            arguments.putString("pollid", pollid);
+            arguments.putString("polltitle", polltitle);
+            arguments.putString("finalStatus", finalStatus);
+            pollTopicFragment.setArguments(arguments);
+            addFragmentOnTop(pollTopicFragment);
+
+        } else if (value.equals("edit")) {
+
+            Bundle arguments = new Bundle();
+            String qid = callbackDomain.getId();
+            String question = callbackDomain.getQuestion();
+
+            arguments.putString("from", "edit");
+            arguments.putString("meetingid", meetingid);
+            arguments.putString("qid", qid);
+            arguments.putString("question", question);
+            arguments.putString("eo", repid);
+            if (primary_meeting_id != null && primary_meeting_id.length() > 0) {
+                arguments.putString("primarymeetingid", primarymeetingid);
+            } else {
+                arguments.putString("primarymeetingid", "");
+            }
+
+
+            CommonUtils.log(TAG, "from: " + "edit " + meetingid + "   " + arguments.getString("qid") + "   " + question);
+
+            compose_question = new Compose_Question();
+            compose_question.setArguments(arguments);
+
+            addFragmentOnTop(compose_question);
+        } else if (value.equals("exit")) {
+            bottommenusec.setVisibility(View.GONE);
+        }
+    }
+
+    public void addFragmentOnTop(Fragment fragment) {
+
+        fragmentManager.beginTransaction().replace(R.id.bottommencontainer, fragment).addToBackStack(null).commit();
+    }
+
+    @Override
+    public void onBackPressed() {
+
+        if (zoomedwebview) {
+//            zoomsec.setVisibility(View.GONE);
+            zoomedwebview = false;
+            zoomicon.setImageResource(R.drawable.maximize);
+
+            boolean tabletSize = getResources().getBoolean(R.bool.isTablet);
+
+            if (!tabletSize) {
+
+                try {
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                } catch (IllegalStateException e) {
+
+                    e.printStackTrace();
+                }
+            } else {
+                try {
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+                } catch (IllegalStateException e) {
+
+                    e.printStackTrace();
+                }
+
+            }
+
+        } else if (mainviewvideo.getVisibility() == View.VISIBLE) {
+            closefuntion();
+        } else if (bottommenusec.getVisibility() == View.GONE) {
+            exitvideosession();
+        } else {
+            if (fragmentManager.getBackStackEntryCount() > 0) {
+
+                Fragment f = fragmentManager.findFragmentById(R.id.bottommencontainer);
+                if (f instanceof Question) {
+                    bottommenusec.setVisibility(View.GONE);
+                } else if (f instanceof PollFragment) {
+                    bottommenusec.setVisibility(View.GONE);
+                } else if (f instanceof NotesFragment) {
+                    bottommenusec.setVisibility(View.GONE);
+                } else {
+                    super.onBackPressed();
+                }
+            }
+
+        }
+    }
+
+
+    private void disconnectSession(boolean b) {
+
+        reqnotcalled = false;
+
+        if (mPublisher != null) {
+            mSession.unpublish(mPublisher);
+            mPublisher.destroy();
+            mPublisher = null;
+        }
+
+
+        if (mSession != null) {
+            mSession.disconnect();
+        }
+
+        if (b) {
+
+
+            if (valueEventListener != null) {
+                mDatabase.removeEventListener(valueEventListener);
+            }
+
+            finish();
+        }
+    }
+
+    private void disconnectSession2(boolean b) {
+
+        reqnotcalled = false;
+
+        if (mPublisher != null) {
+            mSession.unpublish(mPublisher);
+            mPublisher.destroy();
+            mPublisher = null;
+        }
+
+
+        if (mSession != null) {
+            mSession.disconnect();
+        }
+
+        if (b) {
+
+
+            if (valueEventListener != null) {
+                mDatabase.removeEventListener(valueEventListener);
+            }
+
+            if (!usertype.equals("1") && !usertype.equals("4")) {
+
+                Intent certifyIntent = new Intent(VideoCallActivity.this, CertifyActivity.class);
+                certifyIntent.putExtra("mydetails", "");
+                certifyIntent.putExtra("meetingid", meetingid);
+                certifyIntent.putExtra("canedit", "yes");
+                startActivity(certifyIntent);
+
+            } else {
+
+                Intent closeoutIntent = new Intent(VideoCallActivity.this, CloseoutActivity.class);
+                closeoutIntent.putExtra("mydetails", "");
+                closeoutIntent.putExtra("meetingid", meetingid);
+                closeoutIntent.putExtra("canedit", "yes");
+                startActivity(closeoutIntent);
+
+            }
+
+            finish();
+
+        }
+    }
+
+    public void endapicall() {
+        String url = Baseurl + UrlConstants.END_MEETING + meetingid;
+        volleyUtils.callnetworkrequest(VideoCallActivity.this, VideoCallActivity.this, 2, url, null, TAG, UrlConstants.REQ_END_MEETING, 1, true, false);
+
+    }
+
+    private void showalert(Context context, final String action) {
+
+        if (context instanceof Activity) {
+            Activity activity = (Activity) context;
+            if (!activity.isFinishing()) {
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                builder.setTitle(FontUtils.customFontCharacter(VideoCallActivity.this, action + " Engagement", 2)).setMessage(FontUtils.customFontCharacter(VideoCallActivity.this, "Are you sure you want to " + action + " the engagement ?", 1)).setCancelable(false).setNegativeButton(FontUtils.customFontCharacter(VideoCallActivity.this, "Yes", 2), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        dialog.dismiss();
+                        String url = Baseurl + UrlConstants.END_MEETING + meetingid;
+                        volleyUtils.callnetworkrequest(VideoCallActivity.this, VideoCallActivity.this, 2, url, null, TAG, UrlConstants.REQ_END_MEETING, 1, true, false);
+
+
+                    }
+                }).setPositiveButton(FontUtils.customFontCharacter(VideoCallActivity.this, "No", 2), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        dialog.dismiss();
+
+                    }
+                });
+                AlertDialog alert = builder.create();
+                alert.show();
+
+            }
+        }
+    }
+
+
+    @SuppressLint("SetTextI18n")
+    @Override
+    public void onAudioLevelUpdated(SubscriberKit subscriberKit, float v) {
+//        CommonUtils.log("audio_vol", String.valueOf(v));
+
+//        if (zoomsec.getVisibility() != View.VISIBLE) {
+        if (!zoomedwebview) {
+
+            String subscriberid = subscriberKit.getStream().getName();
+
+            DecimalFormat decimalFormat = new DecimalFormat("#.##");
+            float twoDigitsF = Float.valueOf(decimalFormat.format(v));
+            float f2 = 0.3f;
+
+            if (v > f2) {
+
+                CommonUtils.log("audio_vol_high_sound", String.valueOf(twoDigitsF));
+//            if (subscriberid.equals(repid) || subscriberid.equals(spkid)) {
+
+                final VideoProfileDomain videoProfileDomain = (VideoProfileDomain) profilemap.get(subscriberid);
+                if (videoProfileDomain != null) {
+                    String profilename = videoProfileDomain.getName();
+                    speakersec.setVisibility(View.VISIBLE);
+                    speaking.setText(profilename + " is speaking...");
+                    canceltimer();
+                    starttimer();
+                }
+
+//            }
+
+            } else {
+                CommonUtils.log("audio_vol _low_sound", String.valueOf(twoDigitsF));
+//            speakersec.setVisibility(View.INVISIBLE);
+            }
+
+        }
+    }
+
+    public void starttimerHCP() {
+
+        hcptimer = new CountDownTimer(2000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+
+                CommonUtils.log("timertime", String.valueOf(millisUntilFinished / 1000));
+            }
+
+            @Override
+            public void onFinish() {
+
+                hcpleft.setVisibility(View.GONE);
+            }
+        }.start();
+
+    }
+
+    public void cancelhcptimer() {
+
+        if (hcptimer != null) {
+            hcptimer.cancel();
+        }
+
+    }
+
+
+    public void starttimer() {
+
+        timer = new CountDownTimer(2000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+
+                CommonUtils.log("timertime", String.valueOf(millisUntilFinished / 1000));
+            }
+
+            @Override
+            public void onFinish() {
+
+                speakersec.setVisibility(View.GONE);
+            }
+        }.start();
+
+    }
+
+    public void canceltimer() {
+
+        if (timer != null) {
+            timer.cancel();
+        }
+
+    }
+
+    public void setContentControl() {
+        if (server.equals(StringConstants.ServerType.IPSEN) || server.equalsIgnoreCase(StringConstants.ServerType.CORE)) {
+
+            if (meetingInitiater.equals(userID)) {
+                contentControl = true;
+            } else {
+                contentControl = false;
+            }
+
+        } else if (server.equals(StringConstants.ServerType.SPEAKER) && StringConstants.BRAND_NAME.equalsIgnoreCase(StringConstants.ServerType.IPSEN)) {
+
+            if (meetingInitiater.equals(userID)) {
+                contentControl = true;
+            } else {
+                contentControl = false;
+            }
+
+        } else if (server.equals(StringConstants.ServerType.SPEAKER) && is_start != null && is_start.equals("1")) {
+            if (meetingInitiater.equals(userID)) {
+                contentControl = true;
+            } else {
+                contentControl = false;
+            }
+        }
+    }
+
+}

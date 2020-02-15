@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/DynamicGrid" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/List_swipe" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/MPAndroidChart" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Pie-Chart-Tutorial" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/android-camerax-sample" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/flutter_login_demo" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/flutter_todo" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/image-picker-demo-flutter" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/mvvmconcept_an" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/opentok-network-test" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/radius-direct" vcs="Git" />
+  </component>
+</project>

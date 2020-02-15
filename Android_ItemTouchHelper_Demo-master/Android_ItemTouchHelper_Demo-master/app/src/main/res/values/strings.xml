@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">Android_ItemTouchHelper_Demo</string>
+
+    <string name="tip_drag">tip_drag</string>
+    <string name="my_cahnnel">my_cahnnel</string>
+    <string name="other_channel">other_channel</string>
+    <string name="edit">edit</string>
+    <string name="finish">finish</string>
+    <string name="tv1_note">List - Basic Drag and Swipe</string>
+    <string name="tv2_note">Grid - Basic Swipe</string>
+    <string name="tv3_note">CustomView</string>
+
+    <array name="dummy_items">
+        <item>OYP One</item>
+        <item>OYP Two</item>
+        <item>OYP Three</item>
+        <item>OYP Four</item>
+        <item>OYP Five</item>
+        <item>OYP Six</item>
+        <item>OYP Seven</item>
+        <item>OYP Eight</item>
+        <item>OYP Nine</item>
+        <item>OYP Ten</item>
+    </array>
+</resources>

@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">demosample</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="menu_settings">Settings</string>
+    <string name="image">Image</string>
+</resources>
