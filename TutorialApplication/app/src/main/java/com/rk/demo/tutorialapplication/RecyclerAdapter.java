@@ -1,5 +1,6 @@
 package com.rk.demo.tutorialapplication;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,7 +9,18 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
+
 public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHolder> {
+    public ArrayList<RecycleModel>recycleModels;
+    public Context context;
+    String teamidstr,teamnamestr;
+
+    public RecyclerAdapter(Context context,ArrayList<RecycleModel> recycleModels) {
+        this.context=context;
+        this.recycleModels = recycleModels;
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -16,7 +28,12 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ViewHolder holder, int i) {
+        teamidstr = recycleModels.get(i).getId();
+        teamnamestr = recycleModels.get(i).getTeam();
+
+        holder.teamid.setText(teamidstr);
+        holder.teamname.setText(teamnamestr);
 
     }
 
@@ -24,17 +41,21 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
 
     @Override
     public int getItemCount() {
-        return 0;
+        if (recycleModels != null) {
+            return recycleModels.size();
+        } else {
+            return 0;
+        }
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {
 
-        TextView textViewImageUrl,textViewName;
+        TextView teamid,teamname;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            textViewImageUrl = itemView.findViewById(R.id.textViewImageUrl);
-            textViewName = itemView.findViewById(R.id.textViewName);
+            teamid = itemView.findViewById(R.id.textViewid);
+            teamname = itemView.findViewById(R.id.textViewname);
         }
     }
 }

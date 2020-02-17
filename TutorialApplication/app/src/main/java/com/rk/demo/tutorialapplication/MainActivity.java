@@ -3,6 +3,7 @@ package com.rk.demo.tutorialapplication;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.DownloadManager;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -45,6 +46,9 @@ public class MainActivity extends AppCompatActivity {
 
     EditText id_, pass_;
     Button btn_;
+
+    // Data Transfer
+    JSONObject jsonObject;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -181,12 +185,18 @@ public class MainActivity extends AppCompatActivity {
 
                 try {
                     //getting the whole json object from the response
-                    JSONObject obj = new JSONObject(response);
+                    jsonObject = new JSONObject(response);
+                    boolean strApi= jsonObject.getBoolean("api");
+                    if(strApi){
+                        Intent intent= new Intent(MainActivity.this,RecycleActivity.class);
+                        intent.putExtra("myobject",jsonObject.toString());
+                        startActivity(intent);
+                    }
 
 
 
 
-                    System.out.println("obj >>>"+obj);
+                    System.out.println("obj >>>"+jsonObject);
                 }catch (Exception e){
                     e.printStackTrace();
                     System.out.println("err >>>");

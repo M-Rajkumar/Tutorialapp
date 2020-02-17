@@ -39,8 +39,8 @@ public class ListViewAdapter extends ArrayAdapter<Hero> {
         View listViewItem = inflater.inflate(R.layout.list_items, null, true);
 
         //getting text views
-        TextView textViewName = listViewItem.findViewById(R.id.textViewName);
-        TextView textViewImageUrl = listViewItem.findViewById(R.id.textViewImageUrl);
+        TextView textViewName = listViewItem.findViewById(R.id.textViewname);
+        TextView textViewImageUrl = listViewItem.findViewById(R.id.textViewid);
 
         //Getting the hero for the specified position
         Hero hero = heroList.get(position);
